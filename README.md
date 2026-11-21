@@ -174,10 +174,27 @@ Manage your queue and approve posts from your couch in **under 2 minutes**:
 
 ---
 
+## ☁️ Deploying to Render (24/7 Hosting)
+
+PostPilot includes native Render support (`render.yaml` Blueprint) so your Telegram Bot and Scheduler can run **24/7 in the cloud for free**:
+
+1. Push this repository to your GitHub.
+2. Log into **[Render.com](https://render.com/)**.
+3. Click **New +** $\rightarrow$ **Blueprint**.
+4. Connect your `X-PostPilot` repository.
+5. Render will detect `render.yaml`. Fill in your environment variables:
+   - `GROQ_API_KEY`: your free Groq key
+   - `TELEGRAM_BOT_TOKEN`: your BotFather token
+   - `TELEGRAM_OWNER_ID`: your numerical Telegram ID
+6. Click **Apply**. Render will build and deploy PostPilot with automatic health checks!
+
+---
+
 ## 💻 CLI Cheatsheet
 
 | Command | Description | Example |
 |---|---|---|
+| `postpilot start` | Run unified daemon (Scheduler + Telegram + Health Check) | `postpilot start` |
 | `postpilot doctor` | Run diagnostic check on AI keys, DB, and Telegram | `postpilot doctor` |
 | `postpilot init` | Initialize profile, timezone, and database | `postpilot init` |
 | `postpilot status` | Inspect system health, queue counts, and provider | `postpilot status` |

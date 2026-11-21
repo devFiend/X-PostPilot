@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  postpilot:
+    build: .
+    container_name: postpilot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    environment:
+      - POSTPILOT_DB_PATH=/app/data/postpilot.db
+    ports:
+      - "8000:8000"

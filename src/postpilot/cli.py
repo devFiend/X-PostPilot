@@ -80,5 +80,12 @@ def run_telegram():
     run_telegram_bot()
 
 
+@app.command("start")
+def start():
+    """Run the unified daemon (Scheduler + Telegram Bot + Health Check)."""
+    from postpilot.daemon import start_daemon
+    start_daemon()
+
+
 if __name__ == "__main__":
     app()

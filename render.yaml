@@ -1,0 +1,31 @@
+services:
+  # PostPilot Web Service on Render Free Tier
+  # Runs the Telegram Bot + Scheduler + HTTP Health Check
+  - type: web
+    name: postpilot
+    runtime: python
+    plan: free
+    region: frankfurt # or oregon / ohio / singapore
+    buildCommand: pip install -e .
+    startCommand: python -m postpilot.daemon
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: GROQ_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_OWNER_ID
+        sync: false
+      - key: DEFAULT_AI_PROVIDER
+        value: groq
+      - key: DEFAULT_PUBLISH_METHOD
+        value: manual
+      - key: DEFAULT_PUBLISH_MODE
+        value: approval
+      - key: TIMEZONE
+        value: Africa/Lagos
+      - key: MAX_POSTS_PER_DAY
+        value: 3
+      - key: POSTPILOT_DB_PATH
+        value: postpilot.db
