@@ -5,6 +5,7 @@ CLI command exports.
 from postpilot.commands import (
     autopilot_cmd,
     config_cmd,
+    dna_cmd,
     doctor_cmd,
     drafts_cmd,
     generate_cmd,
@@ -18,6 +19,7 @@ from postpilot.commands import (
 __all__ = [
     "autopilot_cmd",
     "config_cmd",
+    "dna_cmd",
     "doctor_cmd",
     "drafts_cmd",
     "generate_cmd",

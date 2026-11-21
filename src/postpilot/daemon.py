@@ -13,7 +13,7 @@ from rich.console import Console
 from postpilot.database.db import init_db, get_db
 from postpilot.database.models import Draft, PostStatus, PublishedPost
 from postpilot.database.repositories import DraftRepository
-from postpilot.scheduler.worker import scheduler
+from postpilot.scheduler.worker import scheduler, configure_hourly_delivery_job
 from postpilot.telegram.bot import run_telegram_bot
 from postpilot.utils.config import settings
 
@@ -106,7 +106,8 @@ def start_daemon():
         except Exception as e:
             console.print(f"[yellow]Warning: Could not bind HTTP port {port_env}: {e}[/]")
 
-    # 3. Start APScheduler in background thread
+    # 3. Start APScheduler in background thread with hourly content drop
+    configure_hourly_delivery_job()
     if not scheduler.running:
         scheduler.start()
         console.print("[bold green]✔ APScheduler active & persistent jobstore online.[/]")

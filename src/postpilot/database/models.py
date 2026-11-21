@@ -1,5 +1,6 @@
 """
 SQLAlchemy ORM models for PostPilot.
+Includes Creator Intelligence & TweetDNA models.
 """
 
 from datetime import datetime, timezone
@@ -120,3 +121,53 @@ class ActivityLog(Base):
     entity_id = Column(Integer, nullable=True)
     details = Column(Text, nullable=True)
     created_at = Column(DateTime, default=utc_now)
+
+
+# -----------------------------------------------------------------------------
+# TweetDNA & Creator Intelligence Models
+# -----------------------------------------------------------------------------
+
+class TrackedCreator(Base):
+    __tablename__ = "tracked_creators"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String(100), unique=True, nullable=False)
+    display_name = Column(String(100), nullable=True)
+    bio = Column(Text, nullable=True)
+    avatar_url = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+    last_synced_at = Column(DateTime, nullable=True)
+
+    tweets = relationship("CreatorTweet", back_populates="creator", cascade="all, delete-orphan")
+    dna = relationship("CreatorDNA", back_populates="creator", uselist=False, cascade="all, delete-orphan")
+
+
+class CreatorTweet(Base):
+    __tablename__ = "creator_tweets"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    creator_id = Column(Integer, ForeignKey("tracked_creators.id"), nullable=False)
+    tweet_id = Column(String(100), unique=True, nullable=False)
+    text = Column(Text, nullable=False)
+    likes_count = Column(Integer, default=0)
+    retweets_count = Column(Integer, default=0)
+    tweet_created_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=utc_now)
+
+    creator = relationship("TrackedCreator", back_populates="tweets")
+
+
+class CreatorDNA(Base):
+    __tablename__ = "creator_dna"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    creator_id = Column(Integer, ForeignKey("tracked_creators.id"), nullable=False, unique=True)
+    tone = Column(String(255), default="Direct, contrarian, actionable")
+    content_pillars = Column(Text, default="")
+    hook_patterns = Column(Text, default="")
+    vocabulary = Column(Text, default="")
+    writing_frameworks = Column(Text, default="")
+    playbook_prompt = Column(Text, default="")
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+    creator = relationship("TrackedCreator", back_populates="dna")

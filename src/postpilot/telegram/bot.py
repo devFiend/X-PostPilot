@@ -1,6 +1,6 @@
 """
 Telegram Bot Application runner.
-Registers all commands and inline callback query handlers.
+Registers all commands, TweetDNA handlers, and inline callback query handlers.
 """
 
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
@@ -14,6 +14,11 @@ from postpilot.telegram.handlers import (
     queue_command,
     pause_command,
     resume_command,
+    track_command,
+    creators_command,
+    untrack_command,
+    ideas_command,
+    inspire_command,
     callback_handler,
 )
 
@@ -26,7 +31,7 @@ def run_telegram_bot():
 
     app = ApplicationBuilder().token(settings.TELEGRAM_BOT_TOKEN).build()
 
-    # Register command handlers
+    # Core commands
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("status", status_command))
@@ -36,8 +41,15 @@ def run_telegram_bot():
     app.add_handler(CommandHandler("pause", pause_command))
     app.add_handler(CommandHandler("resume", resume_command))
 
-    # Register callback query handler for inline button clicks
+    # TweetDNA & Creator Intelligence commands
+    app.add_handler(CommandHandler("track", track_command))
+    app.add_handler(CommandHandler("creators", creators_command))
+    app.add_handler(CommandHandler("untrack", untrack_command))
+    app.add_handler(CommandHandler("ideas", ideas_command))
+    app.add_handler(CommandHandler("inspire", inspire_command))
+
+    # Inline button callback queries
     app.add_handler(CallbackQueryHandler(callback_handler))
 
-    print(f"PostPilot Telegram Bot is running in long-polling mode (Owner ID: {settings.TELEGRAM_OWNER_ID or 'Not Set'})...")
+    print(f"PostPilot + TweetDNA Telegram Bot is running in long-polling mode (Owner ID: {settings.TELEGRAM_OWNER_ID or 'Not Set'})...")
     app.run_polling()

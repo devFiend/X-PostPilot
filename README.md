@@ -38,6 +38,16 @@
 - **Ollama:** 100% private, offline generation with zero internet reliance.
 - **Strict Guardrails:** Built-in validator guarantees every post stays strictly under 280 characters with no corporate fluff or repetitive buzzwords.
 
+### 🧬 TweetDNA Creator Intelligence & Style Cloning
+- **Anonymous Public Tweet Scraping ($0 Ban-Proof):** Scrapes recent public tweets from creators you admire (`@levelsio`, `@swyx`, `@shl`) without using your personal account or paid APIs.
+- **4-Layer DNA Extraction:** Deconstructs Content Pillars, Tweet Formats, Writing Rhythm, and Hook Formulas.
+- **Multi-Creator Synthesis:** Blends the best traits of 5-10 creators into original content tailored to your niche.
+
+### ⏰ Hourly Content Delivery (8:00 AM – 11:59 PM)
+- Automatically delivers **4–5 fresh post cards every hour** directly to your Telegram chat.
+- Each card comes with a **`[🚀 Post to X Now (Auto-Approves)]`** button that opens the pre-filled X composer on your phone in 1 tap!
+- On-demand requests anytime: `/ideas [count]` or `/inspire @creator [count]`.
+
 ### 🎭 CreatorDNA Content Profiling
 - Generates posts that sound like **you**, not a boilerplate corporate bot.
 - Configurable content pillars (e.g., *Software Engineering, AI Tools, Building in Public*), voice guidelines, and excluded phrases.
