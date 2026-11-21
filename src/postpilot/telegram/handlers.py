@@ -4,7 +4,7 @@ Telegram Bot handlers for drafting, approval, queue management, and autopilot co
 
 import urllib.parse
 from datetime import datetime, timedelta, timezone
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 from postpilot.telegram.security import owner_only
 from postpilot.telegram.keyboards import get_draft_keyboard, get_queue_keyboard
@@ -40,10 +40,10 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "📖 *PostPilot Usage Guide*\n\n"
         "*1. Generating Content*\n"
         "Type `/generate Why developers love clean architecture` to generate 3 post variants.\n"
-        "Each card provides `[Approve]`, `[Reject]`, `[Copy Post]`, and `[Schedule]` buttons.\n\n"
+        "Every draft includes a **[🚀 Post to X Now]** button that immediately opens your X app with the tweet typed in!\n\n"
         "*2. Publishing*\n"
-        "• When scheduled posts are due in Manual Mode ($0), you get an instant notification with a one-tap copy block.\n"
-        "• In X API mode, approved posts publish directly.\n\n"
+        "• Tap **[🚀 Post to X Now]** on any card to publish with 1 tap.\n"
+        "• Tap **[🗓️ Schedule (2h)]** to save it for later.\n\n"
         "*3. Autopilot*\n"
         "Use `/pause` or `/resume` at any time to halt automated actions."
     )
@@ -88,15 +88,12 @@ async def generate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         service = ContentService(db)
         drafts = await service.generate_drafts(topic=topic, count=3)
         for draft in drafts:
-            reply_markup = get_draft_keyboard(draft.id)
-            encoded = urllib.parse.quote(draft.content)
-            intent_url = f"https://twitter.com/intent/tweet?text={encoded}"
+            reply_markup = get_draft_keyboard(draft.id, draft.content)
             text = (
                 f"📝 *Draft #{draft.id}* ({draft.character_count} chars):\n\n"
-                f"```text\n{draft.content}\n```\n\n"
-                f"[Open in X Composer]({intent_url})"
+                f"```text\n{draft.content}\n```"
             )
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown", disable_web_page_preview=True)
+            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     except Exception as e:
         await update.message.reply_text(f"❌ Error generating posts: {e}")
     finally:
@@ -114,7 +111,7 @@ async def drafts_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
         for draft in drafts[:5]:
-            reply_markup = get_draft_keyboard(draft.id)
+            reply_markup = get_draft_keyboard(draft.id, draft.content)
             text = f"📝 *Draft #{draft.id}* [{draft.status}]:\n\n```text\n{draft.content}\n```"
             await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     finally:
@@ -133,10 +130,10 @@ async def queue_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         for sp in pending[:5]:
             draft = db.query(Draft).filter(Draft.id == sp.draft_id).first()
-            content_preview = draft.content[:100] + "..." if draft else "(Content not found)"
+            content_preview = draft.content if draft else "(Content not found)"
             sched_time = sp.scheduled_at.strftime("%Y-%m-%d %H:%M UTC")
-            reply_markup = get_queue_keyboard(sp.id)
-            text = f"🗓️ *Schedule #{sp.id}* (Draft #{sp.draft_id})\nTime: `{sched_time}`\n\n_{content_preview}_"
+            reply_markup = get_queue_keyboard(sp.id, draft.content if draft else "")
+            text = f"🗓️ *Schedule #{sp.id}* (Draft #{sp.draft_id})\nTime: `{sched_time}`\n\n```text\n{content_preview}\n```"
             await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     finally:
         db.close()
@@ -178,34 +175,46 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if data.startswith("approve_"):
             draft_id = int(data.split("_")[1])
+            draft = draft_repo.get_by_id(draft_id)
             draft_repo.update_status(draft_id, PostStatus.APPROVED.value)
-            await query.edit_message_text(f"✅ *Draft #{draft_id} marked as APPROVED!*", parse_mode="Markdown")
+            
+            # Offer 1-tap post button right away
+            keyboard = []
+            if draft:
+                encoded = urllib.parse.quote(draft.content)
+                composer_url = f"https://twitter.com/intent/tweet?text={encoded}"
+                keyboard.append([InlineKeyboardButton("🚀 Post to X Now", url=composer_url)])
+            
+            reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
+            await query.edit_message_text(
+                f"✅ *Draft #{draft_id} marked as APPROVED!*\nReady to dispatch or schedule.",
+                reply_markup=reply_markup,
+                parse_mode="Markdown"
+            )
 
         elif data.startswith("reject_"):
             draft_id = int(data.split("_")[1])
             draft_repo.update_status(draft_id, PostStatus.CANCELLED.value)
             await query.edit_message_text(f"❌ *Draft #{draft_id} REJECTED.*", parse_mode="Markdown")
 
-        elif data.startswith("copy_"):
-            draft_id = int(data.split("_")[1])
-            draft = draft_repo.get_by_id(draft_id)
-            if draft:
-                encoded = urllib.parse.quote(draft.content)
-                intent_url = f"https://twitter.com/intent/tweet?text={encoded}"
-                await query.message.reply_text(
-                    f"📋 *Ready to Post on X:*\n\n```text\n{draft.content}\n```\n\n[Open in X Composer]({intent_url})",
-                    parse_mode="Markdown",
-                    disable_web_page_preview=True,
-                )
-
         elif data.startswith("sched_"):
             draft_id = int(data.split("_")[1])
+            draft = draft_repo.get_by_id(draft_id)
             draft_repo.update_status(draft_id, PostStatus.APPROVED.value)
             target = datetime.now(timezone.utc) + timedelta(hours=2)
             sched_repo.schedule(draft_id, target, settings.TIMEZONE)
             draft_repo.update_status(draft_id, PostStatus.SCHEDULED.value)
+            
+            keyboard = []
+            if draft:
+                encoded = urllib.parse.quote(draft.content)
+                composer_url = f"https://twitter.com/intent/tweet?text={encoded}"
+                keyboard.append([InlineKeyboardButton("🚀 Post to X Now (Early)", url=composer_url)])
+
+            reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
             await query.edit_message_text(
                 f"🗓️ *Draft #{draft_id} scheduled for {target.strftime('%Y-%m-%d %H:%M UTC')}!*",
+                reply_markup=reply_markup,
                 parse_mode="Markdown",
             )
 
