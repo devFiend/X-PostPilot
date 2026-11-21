@@ -1,17 +1,19 @@
 """
 Unified PostPilot Daemon.
-Runs the APScheduler worker, Telegram Bot polling loop, and an optional HTTP health check server.
+Runs the APScheduler worker, Telegram Bot polling loop, and an HTTP server with auto-approval redirect.
 Compatible with Render (Free Web Service / Background Worker), Fly.io, Railway, and Docker.
 """
 
 import os
 import threading
-import asyncio
+import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from rich.console import Console
 
-from postpilot.database.db import init_db
-from postpilot.scheduler.worker import scheduler, start_worker
+from postpilot.database.db import init_db, get_db
+from postpilot.database.models import Draft, PostStatus, PublishedPost
+from postpilot.database.repositories import DraftRepository
+from postpilot.scheduler.worker import scheduler
 from postpilot.telegram.bot import run_telegram_bot
 from postpilot.utils.config import settings
 
@@ -19,7 +21,12 @@ console = Console()
 
 
 class HealthCheckHandler(BaseHTTPRequestHandler):
-    """Minimal HTTP handler to satisfy Render Web Service health checks."""
+    """
+    HTTP handler:
+    - Answers Render Web Service health checks on / and /health.
+    - Handles /post/{draft_id}: Automatically marks draft as APPROVED and PUBLISHED in DB,
+      then sends a 302 redirect to the official Twitter Compose intent!
+    """
 
     def do_GET(self):
         if self.path in ("/", "/health"):
@@ -27,6 +34,45 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Type", "application/json")
             self.end_headers()
             self.wfile.write(b'{"status": "healthy", "service": "PostPilot", "version": "0.1.0"}')
+
+        elif self.path.startswith("/post/"):
+            try:
+                raw_id = self.path.split("/post/")[1].split("?")[0]
+                draft_id = int(raw_id)
+                db = get_db()
+                try:
+                    repo = DraftRepository(db)
+                    draft = repo.get_by_id(draft_id)
+                    if draft:
+                        # Auto-approve and mark as published/handed off!
+                        repo.update_status(draft_id, PostStatus.APPROVED.value)
+
+                        pub = PublishedPost(
+                            draft_id=draft.id,
+                            platform="X",
+                            platform_post_id="manual_handoff",
+                            publication_method="manual",
+                            status="SUCCESS",
+                        )
+                        db.add(pub)
+                        db.commit()
+
+                        encoded = urllib.parse.quote(draft.content)
+                        redirect_target = f"https://twitter.com/intent/tweet?text={encoded}"
+
+                        console.print(f"[bold green]✔ Auto-approved and redirected Draft #{draft_id} to X Composer![/]")
+                        self.send_response(302)
+                        self.send_header("Location", redirect_target)
+                        self.end_headers()
+                        return
+                finally:
+                    db.close()
+            except Exception as e:
+                console.print(f"[red]Error in /post/ auto-approve redirect: {e}[/]")
+
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b"Draft not found")
         else:
             self.send_response(404)
             self.end_headers()
@@ -39,7 +85,7 @@ class HealthCheckHandler(BaseHTTPRequestHandler):
 def run_http_server(port: int):
     """Run lightweight HTTP server on the assigned port."""
     server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
-    console.print(f"[bold green]✔ HTTP Health Check server listening on 0.0.0.0:{port}[/]")
+    console.print(f"[bold green]✔ HTTP server listening on 0.0.0.0:{port} (Health check + Auto-Approve redirect)[/]")
     server.serve_forever()
 
 
