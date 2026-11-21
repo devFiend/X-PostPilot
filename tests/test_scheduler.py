@@ -2,7 +2,7 @@
 Unit tests for Scheduler and Database Job Recovery.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from postpilot.database.repositories import DraftRepository, ScheduleRepository
 from postpilot.database.models import PostStatus
 
@@ -13,7 +13,7 @@ def test_schedule_persists_in_db(in_memory_db):
     draft_repo.update_status(draft.id, PostStatus.APPROVED.value)
 
     schedule_repo = ScheduleRepository(in_memory_db)
-    future_time = datetime.utcnow() + timedelta(days=1)
+    future_time = datetime.now(timezone.utc) + timedelta(days=1)
     sp = schedule_repo.schedule(draft_id=draft.id, scheduled_at=future_time, timezone="Africa/Lagos")
 
     assert sp.id is not None

@@ -1,10 +1,11 @@
 """
-PostPilot CLI Commands package exports.
+CLI command exports.
 """
 
 from postpilot.commands import (
     autopilot_cmd,
     config_cmd,
+    doctor_cmd,
     drafts_cmd,
     generate_cmd,
     init_cmd,
@@ -17,6 +18,7 @@ from postpilot.commands import (
 __all__ = [
     "autopilot_cmd",
     "config_cmd",
+    "doctor_cmd",
     "drafts_cmd",
     "generate_cmd",
     "init_cmd",

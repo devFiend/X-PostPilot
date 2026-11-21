@@ -9,6 +9,7 @@ from postpilot import __app_name__, __version__
 from postpilot.commands import (
     autopilot_cmd,
     config_cmd,
+    doctor_cmd,
     drafts_cmd,
     generate_cmd,
     init_cmd,
@@ -55,6 +56,7 @@ app.add_typer(schedule_cmd.app, name="schedule", help="Schedule posts for public
 app.add_typer(publish_cmd.app, name="publish", help="Publish approved posts immediately.")
 app.add_typer(autopilot_cmd.app, name="autopilot", help="Configure and manage autopilot mode.")
 app.add_typer(config_cmd.app, name="config", help="Manage settings and creator profile.")
+app.add_typer(doctor_cmd.app, name="doctor", help="Run system diagnostics and connectivity checks.")
 
 
 @app.command("status")
@@ -69,6 +71,13 @@ def run_worker():
     """Run the scheduler and background worker process."""
     from postpilot.scheduler.worker import start_worker
     start_worker()
+
+
+@app.command("telegram")
+def run_telegram():
+    """Start the Telegram Bot long-polling service."""
+    from postpilot.telegram.bot import run_telegram_bot
+    run_telegram_bot()
 
 
 if __name__ == "__main__":

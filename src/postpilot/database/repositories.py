@@ -3,9 +3,13 @@ Database repositories for PostPilot entities.
 """
 
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from postpilot.database.models import Draft, ScheduledPost, PublishedPost, CreatorProfile, PostStatus, ActivityLog
+from postpilot.database.models import Draft, ScheduledPost, PublishedPost, CreatorProfile, PostStatus, ActivityLog, Setting
+
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 
 class DraftRepository:
@@ -39,7 +43,7 @@ class DraftRepository:
         draft = self.get_by_id(draft_id)
         if draft:
             draft.status = status
-            draft.updated_at = datetime.utcnow()
+            draft.updated_at = utc_now()
             self.db.commit()
             self.db.refresh(draft)
         return draft
@@ -49,7 +53,7 @@ class DraftRepository:
         if draft:
             draft.content = new_content
             draft.character_count = len(new_content)
-            draft.updated_at = datetime.utcnow()
+            draft.updated_at = utc_now()
             self.db.commit()
             self.db.refresh(draft)
         return draft
@@ -92,3 +96,30 @@ class ScheduleRepository:
         if sp:
             sp.status = PostStatus.PUBLISHED.value
             self.db.commit()
+
+    def cancel(self, schedule_id: int) -> bool:
+        sp = self.db.query(ScheduledPost).filter(ScheduledPost.id == schedule_id).first()
+        if sp:
+            sp.status = PostStatus.CANCELLED.value
+            self.db.commit()
+            return True
+        return False
+
+
+class SettingsRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        setting = self.db.query(Setting).filter(Setting.key == key).first()
+        return setting.value if setting else default
+
+    def set(self, key: str, value: str) -> None:
+        setting = self.db.query(Setting).filter(Setting.key == key).first()
+        if setting:
+            setting.value = value
+            setting.updated_at = utc_now()
+        else:
+            setting = Setting(key=key, value=value)
+            self.db.add(setting)
+        self.db.commit()
