@@ -1,5 +1,5 @@
 """
-Groq AI Provider implementation (High-speed LLaMA-3).
+Groq AI Provider implementation (High-speed LLaMA-3 / GPT-OSS).
 """
 
 from typing import List
@@ -9,9 +9,9 @@ from postpilot.utils.config import settings
 
 
 class GroqProvider(BaseAIProvider):
-    def __init__(self, api_key: str | None = None, model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or settings.GROQ_API_KEY
-        self.model = model
+        self.model = model or settings.GROQ_MODEL
         self.endpoint = "https://api.groq.com/openai/v1/chat/completions"
 
     def get_provider_name(self) -> str:
@@ -36,7 +36,11 @@ class GroqProvider(BaseAIProvider):
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-        user_message = f"{prompt}\n\nPlease generate exactly {count} distinct post variants separated by '---'."
+        user_message = (
+            f"{prompt}\n\n"
+            f"Please generate exactly {count} distinct post variants. "
+            f"Separate each variant with '---' on its own line."
+        )
         payload = {
             "model": self.model,
             "messages": [

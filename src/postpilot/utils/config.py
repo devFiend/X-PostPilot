@@ -3,12 +3,15 @@ Configuration manager using Pydantic Settings.
 """
 
 from pathlib import Path
+from typing import Any
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     # AI Providers
     GROQ_API_KEY: str | None = None
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
     GEMINI_API_KEY: str | None = None
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3:8b"
@@ -35,6 +38,31 @@ class Settings(BaseSettings):
     MAX_POSTS_PER_DAY: int = 3
     POSTPILOT_DB_PATH: str = "postpilot.db"
     LOG_LEVEL: str = "INFO"
+
+    @field_validator("TELEGRAM_OWNER_ID", mode="before")
+    @classmethod
+    def parse_owner_id(cls, v: Any) -> Any:
+        if v == "" or v is None:
+            return None
+        return int(v)
+
+    @field_validator(
+        "GROQ_API_KEY",
+        "GEMINI_API_KEY",
+        "TELEGRAM_BOT_TOKEN",
+        "X_API_KEY",
+        "X_API_SECRET",
+        "X_ACCESS_TOKEN",
+        "X_ACCESS_TOKEN_SECRET",
+        "X_CLIENT_ID",
+        "X_CLIENT_SECRET",
+        mode="before",
+    )
+    @classmethod
+    def parse_empty_strings(cls, v: Any) -> Any:
+        if v == "" or v is None:
+            return None
+        return v
 
     model_config = SettingsConfigDict(
         env_file=".env",
