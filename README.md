@@ -5,6 +5,7 @@
 ### *Your Personal AI Content Management & Publishing Copilot for X (Twitter).*
 **One Engine. Dual Interfaces (CLI + Telegram). 100% $0-First & Ban-Proof.**
 
+[![PyPI Version](https://img.shields.io/pypi/v/postpilot.svg?style=for-the-badge&color=blue)](https://pypi.org/project/postpilot/)
 [![GitHub Release](https://img.shields.io/github/v/release/devFiend/X-PostPilot?style=for-the-badge&color=blue)](https://github.com/devFiend/X-PostPilot/releases)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
@@ -120,14 +121,17 @@ PostPilot is built on a clean, decoupled modular architecture: **"One Engine, Mu
 
 ## ⚡ 60-Second Quickstart
 
-### 1. Clone the repository
+### 1. Installation
+
+**Option A: Install directly via PyPI (Recommended)**
+```bash
+pip install postpilot
+```
+
+**Option B: Clone for local development**
 ```bash
 git clone https://github.com/devFiend/X-PostPilot.git
 cd X-PostPilot
-```
-
-### 2. Set up virtual environment
-```bash
 python -m venv .venv
 
 # Activate on Windows:
