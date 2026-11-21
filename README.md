@@ -5,10 +5,11 @@
 ### *Your Personal AI Content Management & Publishing Copilot for X (Twitter).*
 **One Engine. Dual Interfaces (CLI + Telegram). 100% $0-First & Ban-Proof.**
 
+[![GitHub Release](https://img.shields.io/github/v/release/devFiend/X-PostPilot?style=for-the-badge&color=blue)](https://github.com/devFiend/X-PostPilot/releases)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Architecture: Clean](https://img.shields.io/badge/Architecture-Clean%20%2F%20Modular-green.svg?style=for-the-badge)]()
-[![Tests: Passing](https://img.shields.io/badge/Tests-11%2F11%20Passed-brightgreen.svg?style=for-the-badge)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-15%2F15%20Passed-brightgreen.svg?style=for-the-badge)]()
 [![Cost: $0-First](https://img.shields.io/badge/Cost-%240--First-success.svg?style=for-the-badge)]()
 
 <br/>
@@ -22,7 +23,9 @@
 [Architecture](#-system-architecture) •
 [Quickstart](#-60-second-quickstart) •
 [Telegram Setup](#-linking-your-telegram-bot) •
+[TweetDNA Intelligence](#-tweetdna-creator-intelligence) •
 [CLI Cheatsheet](#-cli-cheatsheet) •
+[Deploy to Render](#-deploying-to-render-247-hosting) •
 [Documentation](#-deep-documentation) •
 [License](#-license)
 
@@ -39,12 +42,12 @@
 - **Strict Guardrails:** Built-in validator guarantees every post stays strictly under 280 characters with no corporate fluff or repetitive buzzwords.
 
 ### 🧬 TweetDNA Creator Intelligence & Style Cloning
-- **Anonymous Public Tweet Scraping ($0 Ban-Proof):** Scrapes recent public tweets from creators you admire (`@levelsio`, `@swyx`, `@shl`) without using your personal account or paid APIs.
+- **Anonymous Public Tweet Scraping ($0 Ban-Proof):** Scrapes recent public tweets from creators you admire (`@levelsio`, `@swyx`, `@shl`, `@karpathy`) without using your personal account or paid APIs.
 - **4-Layer DNA Extraction:** Deconstructs Content Pillars, Tweet Formats, Writing Rhythm, and Hook Formulas.
 - **Multi-Creator Synthesis:** Blends the best traits of 5-10 creators into original content tailored to your niche.
 
 ### ⏰ Hourly Content Delivery (8:00 AM – 11:59 PM)
-- Automatically delivers **4–5 fresh post cards every hour** directly to your Telegram chat.
+- Automatically delivers **4–5 fresh post cards every hour** directly to your Telegram chat during active hours.
 - Each card comes with a **`[🚀 Post to X Now (Auto-Approves)]`** button that opens the pre-filled X composer on your phone in 1 tap!
 - On-demand requests anytime: `/ideas [count]` or `/inspire @creator [count]`.
 
@@ -61,10 +64,6 @@
 ### 📱 Private Telegram Remote Control
 - Single-user authenticated bot locked to your personal `TELEGRAM_OWNER_ID`.
 - Generate, inspect, approve, reject, and schedule posts directly from your phone while on the go.
-
-### ⏰ Crash-Resilient Local Scheduler
-- Powered by `APScheduler` backed by a persistent SQLite jobstore.
-- If your laptop goes to sleep or restarts, pending jobs are automatically recovered and queued on boot.
 
 ### ⚡ Autopilot with Emergency Kill-Switch
 - Rotates content pillars throughout the day.
@@ -95,27 +94,26 @@ PostPilot is built on a clean, decoupled modular architecture: **"One Engine, Mu
 |   +-------------------+  +-------------------+  +-------------------+   |
 |   |   ContentService  |  |    DraftService   |  |    QueueService   |   |
 |   +-------------------+  +-------------------+  +-------------------+   |
-|   |  ApprovalService  |  | SchedulingService |  |  AutopilotService |   |
+|   |  ApprovalService  |  | SchedulingService |  |    DNAService     |   |
 |   +-------------------+  +-------------------+  +-------------------+   |
-|   |                       PublishingService                         |   |
-|   +-----------------------------------------------------------------+   |
+|   |  AutopilotService |  |       PublishingService                  |   |
+|   +-------------------+  +------------------------------------------+   |
 +--------------------|-------------------|--------------------|-----------+
                      |                   |                    |
      +---------------+                   |                    +---------------+
      |                                   |                                    |
 +----v-----------------+      +----------v----------+      +------------------v---+
-|       AI LAYER       |      |  PUBLISHING LAYER   |      |   DATA & SCHEDULER   |
+|  AI & TWEETDNA LAYER |      |  PUBLISHING LAYER   |      |   DATA & SCHEDULER   |
 |                      |      |                     |      |                      |
 | +------------------+ |      | +-----------------+ |      | +------------------+ |
-| |    AIRouter      | |      | | BasePublisher   | |      | | APScheduler      | |
-| +------------------+ |      | +--------+--------+ |      | | (SQLite Store)   | |
-| | Groq / Gemini /  | |      |          |          |      | +------------------+ |
-| | Ollama Adapters  | |      |    +-----+----+     |      | | SQLAlchemy Repos | |
-| +------------------+ |      | +--v----+ +---v---+ |      | +------------------+ |
-|                      |      | |Manual | |X API  | |      | | SQLite DB        | |
-|                      |      | |Handoff| |  v2   | |      | | (postpilot.db)   | |
-|                      |      | +-------+ +-------+ |      | +------------------+ |
-+----------------------+      +---------------------+      +----------------------+
+| | TweetDNAAnalyzer | |      | | BasePublisher   | |      | | APScheduler      | |
+| +------------------+ |      | +--------+--------+ |      | | (Hourly Drops)   | |
+| | TweetDNAGenerator| |      |          |          |      | +------------------+ |
+| +------------------+ |      |    +-----+----+     |      | | SQLite Store     | |
+| | AIRouter (Groq/  | |      | +--v----+ +---v---+ |      | +------------------+ |
+| | Gemini/Ollama)   | |      | |Manual | |X API  | |      | | SQLAlchemy Repos | |
+| +------------------+ |      | |Handoff| |  v2   | |      | | (postpilot.db)   | |
++----------------------+      +---------+ +-------+ +      +----------------------+
 ```
 
 ---
@@ -130,7 +128,6 @@ cd X-PostPilot
 
 ### 2. Set up virtual environment
 ```bash
-# Create virtual environment
 python -m venv .venv
 
 # Activate on Windows:
@@ -158,10 +155,32 @@ GROQ_API_KEY=gsk_your_free_key_here
 python -m postpilot.cli doctor
 ```
 
-### 5. Generate your first posts!
+---
+
+## 🧬 TweetDNA Creator Intelligence
+
+Reverse-engineer how your favorite creators write and synthesize their styles into your niche:
+
+### Track a Creator (CLI or Telegram)
 ```bash
-python -m postpilot.cli generate --topic "Why developers should write clean code" --count 3
+postpilot dna track @levelsio
+postpilot dna track @swyx
 ```
+In Telegram, simply send:
+```text
+/track @levelsio
+```
+PostPilot anonymously scrapes their recent public tweets, extracts their **Tone, Hook Patterns, and Writing Frameworks**, and adds them to your active creator intelligence pool!
+
+### Generate Posts From Your Creator Pool
+```bash
+# Generate 4 on-demand posts across your tracked creators
+postpilot dna ideas --count 4
+```
+In Telegram:
+- `/ideas 2` — Returns 2 on-demand post cards.
+- `/inspire @levelsio 2` — Drafts 2 posts specifically mimicking `@levelsio`'s voice.
+- `/creators` — Lists all creators in your active intelligence pool.
 
 ---
 
@@ -180,13 +199,13 @@ Manage your queue and approve posts from your couch in **under 2 minutes**:
    ```bash
    python -m postpilot.cli telegram
    ```
-5. Open your bot in Telegram and send `/generate Why indie hacking is rewarding`. Click `[Approve]` or `[Copy Post]` right on your phone!
+5. Open your bot in Telegram and send `/track @levelsio` or `/ideas`.
 
 ---
 
 ## ☁️ Deploying to Render (24/7 Hosting)
 
-PostPilot includes native Render support (`render.yaml` Blueprint) so your Telegram Bot and Scheduler can run **24/7 in the cloud for free**:
+PostPilot includes native Render support (`render.yaml` Blueprint) so your Telegram Bot and Hourly Drops run **24/7 in the cloud for free**:
 
 1. Push this repository to your GitHub.
 2. Log into **[Render.com](https://render.com/)**.
@@ -206,9 +225,10 @@ PostPilot includes native Render support (`render.yaml` Blueprint) so your Teleg
 |---|---|---|
 | `postpilot start` | Run unified daemon (Scheduler + Telegram + Health Check) | `postpilot start` |
 | `postpilot doctor` | Run diagnostic check on AI keys, DB, and Telegram | `postpilot doctor` |
-| `postpilot init` | Initialize profile, timezone, and database | `postpilot init` |
-| `postpilot status` | Inspect system health, queue counts, and provider | `postpilot status` |
-| `postpilot generate` | Generate multiple post options with AI | `postpilot generate -t "FastAPI vs Django" -c 3` |
+| `postpilot dna track` | Track and analyze a creator's Content DNA | `postpilot dna track @levelsio` |
+| `postpilot dna list` | List all tracked creators in intelligence pool | `postpilot dna list` |
+| `postpilot dna ideas` | Generate posts synthesized from creator pool | `postpilot dna ideas --count 4` |
+| `postpilot generate` | Generate multiple post options with AI | `postpilot generate -t "Clean Architecture" -c 3` |
 | `postpilot drafts` | Browse all saved drafts | `postpilot drafts` |
 | `postpilot approve` | Approve a draft for scheduling | `postpilot approve 1` |
 | `postpilot schedule` | Schedule an approved post | `postpilot schedule 1 --at "2026-11-25 18:30"` |
@@ -232,27 +252,15 @@ Comprehensive architectural design, specifications, and test documentation:
 
 ## 🧪 Testing
 
-PostPilot includes a complete test suite covering AI parsing, database repositories, state machine invariants, scheduler recovery, and security firewalls:
+PostPilot includes a complete test suite covering AI parsing, TweetDNA extraction, database repositories, state machine invariants, scheduler recovery, and security firewalls:
 
 ```bash
-# Run test suite
+# Run full test suite
 python -m pytest
 
 # Run with verbose output
 python -m pytest -v
 ```
-
----
-
-## 🤝 Contributing
-
-Contributions are what make the open-source community an incredible place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
-
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 
