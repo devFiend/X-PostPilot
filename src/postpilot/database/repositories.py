@@ -16,6 +16,7 @@ from postpilot.database.models import (
     TrackedCreator,
     CreatorTweet,
     CreatorDNA,
+    TrendingStory,
 )
 
 
@@ -270,3 +271,57 @@ class CreatorRepository:
 
     def get_dna(self, creator_id: int) -> Optional[CreatorDNA]:
         return self.db.query(CreatorDNA).filter(CreatorDNA.creator_id == creator_id).first()
+
+
+class TrendRepository:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def add_story(
+        self,
+        title: str,
+        source: str,
+        external_url: Optional[str] = None,
+        summary: Optional[str] = None,
+        score: int = 0,
+        category: str = "Tech",
+    ) -> TrendingStory:
+        story = TrendingStory(
+            title=title.strip(),
+            source=source.strip(),
+            external_url=external_url,
+            summary=summary,
+            score=score,
+            category=category,
+        )
+        self.db.add(story)
+        self.db.commit()
+        self.db.refresh(story)
+        return story
+
+    def is_recently_tracked(self, title: str, threshold: float = 0.65) -> bool:
+        """Check if story or similar headline was recorded in past 48 hours."""
+        import re
+        words_new = set(re.findall(r"\w+", title.lower()))
+        if len(words_new) < 3:
+            return False
+
+        recent = self.db.query(TrendingStory).order_by(TrendingStory.created_at.desc()).limit(100).all()
+        for r in recent:
+            words_existing = set(re.findall(r"\w+", r.title.lower()))
+            if not words_existing:
+                continue
+            inter = len(words_new.intersection(words_existing))
+            union = len(words_new.union(words_existing))
+            if union > 0 and (inter / union) >= threshold:
+                return True
+        return False
+
+    def list_recent_trends(self, limit: int = 20) -> List[TrendingStory]:
+        return self.db.query(TrendingStory).order_by(TrendingStory.score.desc(), TrendingStory.created_at.desc()).limit(limit).all()
+
+    def mark_alerted(self, story_id: int) -> None:
+        story = self.db.query(TrendingStory).filter(TrendingStory.id == story_id).first()
+        if story:
+            story.is_alerted = True
+            self.db.commit()

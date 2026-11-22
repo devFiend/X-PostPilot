@@ -31,6 +31,7 @@ from postpilot.telegram.handlers import (
     untrack_command,
     ideas_command,
     inspire_command,
+    trends_command,
     dashboard_text_handler,
     callback_handler,
 )
@@ -41,6 +42,7 @@ async def setup_bot_commands(application):
     Registers native command menu and applies bot profile branding (name, description, avatar).
     """
     commands = [
+        BotCommand("trends", "🔥 Scan live niche trends & draft takes"),
         BotCommand("ideas", "⚡ Generate on-demand post ideas"),
         BotCommand("creators", "👥 View your tracked creator pool"),
         BotCommand("track", "🧬 Track and analyze a creator"),
@@ -117,6 +119,7 @@ def run_telegram_bot():
     app.add_handler(CommandHandler("resume", resume_command))
 
     # TweetDNA & Creator Intelligence commands
+    app.add_handler(CommandHandler("trends", trends_command))
     app.add_handler(CommandHandler("track", track_command))
     app.add_handler(CommandHandler("creators", creators_command))
     app.add_handler(CommandHandler("untrack", untrack_command))

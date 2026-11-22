@@ -15,17 +15,17 @@ from postpilot.utils.config import settings
 
 def get_dashboard_reply_keyboard() -> ReplyKeyboardMarkup:
     """
-    Persistent 2x3 reply keyboard grid pinned below the chat box.
+    Persistent reply keyboard grid pinned below the chat box.
     Provides instant 1-tap access to core workflows.
     """
     keyboard = [
         [
+            KeyboardButton("🔥 Live Niche Trends"),
             KeyboardButton("⚡ Quick Ideas (2)"),
-            KeyboardButton("👥 Tracked Creators"),
         ],
         [
+            KeyboardButton("👥 Tracked Creators"),
             KeyboardButton("📝 Review Drafts"),
-            KeyboardButton("🗓️ View Queue"),
         ],
         [
             KeyboardButton("📊 System Status"),
@@ -39,15 +39,18 @@ def get_welcome_inline_keyboard() -> InlineKeyboardMarkup:
     """Inline menu buttons shown on /start."""
     keyboard = [
         [
-            InlineKeyboardButton("⚡ Generate 2 Ideas Now", callback_data="menu_ideas_2"),
+            InlineKeyboardButton("🔥 Live Niche Trends", callback_data="menu_trends"),
+            InlineKeyboardButton("⚡ Quick Ideas (2)", callback_data="menu_ideas_2"),
+        ],
+        [
             InlineKeyboardButton("👥 My Creators", callback_data="menu_creators"),
-        ],
-        [
             InlineKeyboardButton("📝 Review Drafts", callback_data="menu_drafts"),
-            InlineKeyboardButton("🗓️ View Queue", callback_data="menu_queue"),
         ],
         [
+            InlineKeyboardButton("🗓️ View Queue", callback_data="menu_queue"),
             InlineKeyboardButton("📊 System Status", callback_data="menu_status"),
+        ],
+        [
             InlineKeyboardButton("📖 Help Guide", callback_data="menu_help"),
         ],
     ]

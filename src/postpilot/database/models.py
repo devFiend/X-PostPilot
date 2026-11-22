@@ -171,3 +171,21 @@ class CreatorDNA(Base):
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
     creator = relationship("TrackedCreator", back_populates="dna")
+
+
+# -----------------------------------------------------------------------------
+# Trend Pulse & Real-Time Niche News Models
+# -----------------------------------------------------------------------------
+
+class TrendingStory(Base):
+    __tablename__ = "trending_stories"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(255), nullable=False)
+    summary = Column(Text, nullable=True)
+    source = Column(String(100), nullable=False)  # e.g., "HackerNews", "X: @therundownai"
+    external_url = Column(String(500), nullable=True)
+    score = Column(Integer, default=0)
+    category = Column(String(100), default="Tech")
+    is_alerted = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=utc_now)

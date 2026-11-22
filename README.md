@@ -10,7 +10,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Architecture: Clean](https://img.shields.io/badge/Architecture-Clean%20%2F%20Modular-green.svg?style=for-the-badge)]()
-[![Tests: Passing](https://img.shields.io/badge/Tests-22%2F22%20Passed-brightgreen.svg?style=for-the-badge)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-27%2F27%20Passed-brightgreen.svg?style=for-the-badge)]()
 [![Cost: $0-First](https://img.shields.io/badge/Cost-%240--First-success.svg?style=for-the-badge)]()
 
 <br/>
@@ -46,6 +46,14 @@
 - **Anonymous Public Tweet Scraping ($0 Ban-Proof):** Scrapes recent public tweets from creators you admire (`@levelsio`, `@swyx`, `@shl`, `@karpathy`) without using your personal account or paid APIs.
 - **4-Layer DNA Extraction:** Deconstructs Content Pillars, Tweet Formats, Writing Rhythm, and Hook Formulas.
 - **Multi-Creator Synthesis:** Blends the best traits of 5-10 creators into original content tailored to your niche.
+
+### 🔥 Real-Time Niche Trend Radar (V2 Feature)
+- **Zero-Cost Hybrid Pulse:** Continuously scans real-time breakout discussions across **Hacker News Top Stories** (free public API) and breaking **X Niche Curators** (`@therundownai`, `@swyx`, `@levelsio`, `@techcrunch`).
+- **Niche Keyword Filtering:** Automatically discards irrelevant pop-culture/politics and keeps only stories matching your software, AI, or developer niche.
+- **Dual-Angle Generation:** For every emerging story, PostPilot drafts two distinct perspectives:
+  - *Angle 1: Contrarian / Hot-Take* (Challenges hype and calls out conventional wisdom).
+  - *Angle 2: Builder Breakdown* (Practical lessons and implementation takeaways for engineers).
+- **1-Tap Publishing:** Send `/trends` in Telegram or run `postpilot trends` in the CLI to scan and post in seconds.
 
 ### ⏰ Spaced Content Drip Delivery (8:00 AM – 11:59 PM)
 - Automatically delivers **1 fresh post card every 15 minutes** directly to your Telegram chat during active hours (08:00 – 23:59).

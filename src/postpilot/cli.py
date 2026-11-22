@@ -17,6 +17,7 @@ from postpilot.commands import (
     publish_cmd,
     queue_cmd,
     schedule_cmd,
+    trends_cmd,
 )
 
 app = typer.Typer(
@@ -52,6 +53,7 @@ def main(
 app.add_typer(init_cmd.app, name="init", help="Initialize PostPilot configuration and database.")
 app.add_typer(generate_cmd.app, name="generate", help="Generate draft posts using AI.")
 app.add_typer(dna_cmd.app, name="dna", help="TweetDNA creator intelligence and style cloning.")
+app.add_typer(trends_cmd.app, name="trends", help="Scan live niche trends and generate viral tweet takes.")
 app.add_typer(drafts_cmd.app, name="drafts", help="Manage and inspect draft posts.")
 app.add_typer(queue_cmd.app, name="queue", help="Manage post publishing queue.")
 app.add_typer(schedule_cmd.app, name="schedule", help="Schedule posts for publication.")

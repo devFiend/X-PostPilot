@@ -23,6 +23,7 @@ from postpilot.services.content import ContentService
 from postpilot.services.publishing import PublishingService
 from postpilot.services.autopilot import AutopilotService
 from postpilot.services.dna import DNAService
+from postpilot.services.trends import TrendPulseService
 from postpilot.utils.config import settings
 
 
@@ -91,6 +92,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "⏰ *Content Delivery Drip:* Fresh post cards delivered every 15 minutes during waking hours (*08:00 – 23:59*).\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
         "*⚡ Quick Tap Commands (Tap to Run):*\n"
+        "• `/trends` — Scan live niche trends & get instant hot-takes\n"
         "• `/ideas` — Get 2 fresh post ideas right now\n"
         "• `/creators` — View your tracked creator roster\n"
         "• `/track @levelsio` — Clone a creator's writing DNA\n"
@@ -99,7 +101,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• `/queue` — View scheduled tweets\n"
         "• `/status` — Real-time system health & diagnostics\n"
         "• `/postnow <text>` — Instant 1-tap composer launcher\n"
-        "• `/pause` — Emergency halt hourly delivery\n"
+        "• `/pause` — Emergency halt delivery\n"
         "• `/resume` — Resume delivery\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n\n"
         "_Select an action below or use the pinned menu buttons:_ 👇"
@@ -485,6 +487,69 @@ async def inspire_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 @owner_only
+async def trends_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Scan live breakout stories in the user's niche across Hacker News and X curators, and generate tweet takes."""
+    target = get_msg(update)
+    if not target:
+        return
+
+    status_msg = await target.reply_text(
+        "🔥 *Scanning live niche trends across Hacker News & top X curators...*\n_Filtering for software, AI, and developer discussions..._",
+        parse_mode="Markdown"
+    )
+
+    db = get_db()
+    try:
+        service = TrendPulseService(db)
+        trends = await service.scan_live_trends(limit=2)
+
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
+
+        if not trends:
+            await target.reply_text(
+                "ℹ️ *No major breakout trends detected in your niche right now.*\n"
+                "Try again shortly or tap `/ideas` to generate from your creator pool!",
+                parse_mode="Markdown",
+            )
+            return
+
+        for t_idx, trend in enumerate(trends, start=1):
+            source_label = safe_md(trend.get("source", "Web"))
+            topic_label = safe_md(trend.get("topic", "Tech Trend"))
+            summary_label = safe_md(trend.get("summary", ""))
+
+            header_text = (
+                f"🔥 *Trending Story #{t_idx}: {topic_label}*\n"
+                f"• *Source:* `{source_label}` (Score: `{trend.get('score', 0)}`)\n"
+                f"• *Context:* _{summary_label}_\n"
+                "━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Select a take below to post directly to X:*"
+            )
+            await target.reply_text(header_text, parse_mode="Markdown")
+
+            for take in trend.get("takes", []):
+                draft = await service.draft_trend_take(
+                    content=take["content"],
+                    topic=trend.get("topic", "Niche Trend"),
+                )
+                markup = get_draft_keyboard(draft.id, draft.content)
+                angle_label = safe_md(take["angle"])
+                take_card = (
+                    f"💡 *Angle: {angle_label}* • `({draft.character_count}/280 chars)`\n\n"
+                    f"```text\n{draft.content}\n```"
+                )
+                await target.reply_text(take_card, reply_markup=markup, parse_mode="Markdown")
+
+    except Exception as e:
+        await target.reply_text(f"❌ Error scanning trends: {e}")
+    finally:
+        db.close()
+
+
+@owner_only
 async def generate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = context.args
     if not args:
@@ -611,11 +676,13 @@ async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @owner_only
 async def dashboard_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handles text clicks from the persistent 2x3 reply keyboard grid."""
+    """Handles text clicks from the persistent reply keyboard grid."""
     if not update.message or not update.message.text:
         return
     text = update.message.text.strip()
-    if text == "⚡ Quick Ideas (2)":
+    if text == "🔥 Live Niche Trends":
+        await trends_command(update, context)
+    elif text == "⚡ Quick Ideas (2)":
         await ideas_command(update, context)
     elif text == "👥 Tracked Creators":
         await creators_command(update, context)
@@ -638,7 +705,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = query.data
 
     # Handle Welcome Menu Callbacks
-    if data == "menu_ideas_2":
+    if data == "menu_trends":
+        await trends_command(update, context)
+        return
+    elif data == "menu_ideas_2":
         context.args = ["2"]
         await ideas_command(update, context)
         return
