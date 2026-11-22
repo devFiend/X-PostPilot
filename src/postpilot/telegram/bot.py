@@ -1,9 +1,11 @@
 """
 Telegram Bot Application runner.
 Registers native menu commands (set_my_commands), dashboard buttons, and callback query handlers.
+Includes automatic bot profile branding (name, description, and avatar icon).
 """
 
-from telegram import BotCommand
+from pathlib import Path
+from telegram import BotCommand, InputProfilePhotoStatic
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -16,6 +18,9 @@ from postpilot.telegram.handlers import (
     start_command,
     help_command,
     status_command,
+    doctor_command,
+    postnow_command,
+    setavatar_command,
     generate_command,
     drafts_command,
     queue_command,
@@ -33,8 +38,7 @@ from postpilot.telegram.handlers import (
 
 async def setup_bot_commands(application):
     """
-    Registers the native command menu visible as the blue 'Menu' button in Telegram.
-    Users can tap the button to see all commands with descriptions.
+    Registers native command menu and applies bot profile branding (name, description, avatar).
     """
     commands = [
         BotCommand("ideas", "⚡ Generate on-demand post ideas"),
@@ -43,15 +47,47 @@ async def setup_bot_commands(application):
         BotCommand("inspire", "🎨 Draft posts in a creator's style"),
         BotCommand("drafts", "📝 Review pending drafts"),
         BotCommand("queue", "🗓️ Inspect scheduled queue"),
-        BotCommand("status", "📊 System health & stats"),
-        BotCommand("pause", "⏸ Pause hourly delivery"),
-        BotCommand("resume", "▶ Resume hourly delivery"),
+        BotCommand("status", "📊 Real-time health & diagnostics"),
+        BotCommand("postnow", "🚀 1-tap custom post composer"),
+        BotCommand("doctor", "🩺 Run system diagnostics"),
+        BotCommand("setavatar", "🖼️ Set bot profile photo"),
+        BotCommand("pause", "⏸ Pause content delivery"),
+        BotCommand("resume", "▶ Resume content delivery"),
         BotCommand("help", "📖 User guide & commands"),
     ]
     try:
         await application.bot.set_my_commands(commands)
     except Exception as e:
         print(f"Notice: Could not register Telegram menu commands: {e}")
+
+    # Set bot profile name and descriptions
+    try:
+        await application.bot.set_my_name("PostPilot | X Copilot")
+        await application.bot.set_my_description(
+            "Your personal AI content management & publishing copilot for X (Twitter).\n"
+            "Blends creator intelligence, TweetDNA style cloning, and ban-proof 1-tap publishing."
+        )
+        await application.bot.set_my_short_description("AI Content Management & Publishing Copilot for X")
+    except Exception:
+        pass
+
+    # Auto-apply official bot avatar if present
+    possible_paths = [
+        Path(__file__).resolve().parent.parent / "assets" / "avatar.jpg",
+        Path(__file__).resolve().parent.parent.parent / "assets" / "avatar.jpg",
+        Path("assets/avatar.jpg"),
+        Path("src/postpilot/assets/avatar.jpg"),
+    ]
+    for p in possible_paths:
+        if p.exists():
+            try:
+                with open(p, "rb") as f:
+                    await application.bot.set_my_profile_photo(InputProfilePhotoStatic(f))
+                print(f"✔ Applied official PostPilot avatar to Telegram bot from {p.name}")
+                break
+            except Exception:
+                # May fail if avatar is already set or rate limited by Telegram
+                pass
 
 
 def run_telegram_bot():
@@ -71,6 +107,9 @@ def run_telegram_bot():
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("status", status_command))
+    app.add_handler(CommandHandler("doctor", doctor_command))
+    app.add_handler(CommandHandler("postnow", postnow_command))
+    app.add_handler(CommandHandler("setavatar", setavatar_command))
     app.add_handler(CommandHandler("generate", generate_command))
     app.add_handler(CommandHandler("drafts", drafts_command))
     app.add_handler(CommandHandler("queue", queue_command))

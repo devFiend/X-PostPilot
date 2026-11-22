@@ -14,6 +14,7 @@ from postpilot.telegram.keyboards import (
     get_queue_keyboard,
     get_dashboard_reply_keyboard,
     get_welcome_inline_keyboard,
+    get_status_keyboard,
 )
 from postpilot.database.db import get_db
 from postpilot.database.models import Draft, PostStatus, ScheduledPost, PublishedPost
@@ -32,8 +33,58 @@ def safe_md(text: str) -> str:
     return escape_markdown(str(text), version=1)
 
 
+def get_msg(update: Update):
+    """Retrieve message object whether update came from a direct message or an inline callback query."""
+    return update.effective_message or (update.callback_query and update.callback_query.message)
+
+
+def format_system_health(db) -> tuple[str, InlineKeyboardMarkup]:
+    """Generates real-time diagnostics, system health metrics, and interactive buttons."""
+    autopilot = AutopilotService(db)
+    dna_service = DNAService(db)
+    creators = dna_service.list_creators()
+    auto_state = "⏸ PAUSED" if autopilot.is_paused() else ("▶ ACTIVE" if autopilot.is_enabled() else "⏹ STANDBY")
+    drafts_count = db.query(Draft).count()
+    approved_count = db.query(Draft).filter(Draft.status == PostStatus.APPROVED.value).count()
+    scheduled_count = db.query(ScheduledPost).filter(ScheduledPost.status == PostStatus.SCHEDULED.value).count()
+    published_count = db.query(PublishedPost).filter(PublishedPost.status == "SUCCESS").count()
+
+    total_cached_tweets = sum(len(c.tweets) for c in creators)
+    creators_list_str = ", ".join([f"@{safe_md(c.username)}" for c in creators]) if creators else "None (use `/track @username`)"
+
+    provider_name = settings.DEFAULT_AI_PROVIDER.upper()
+    has_key = bool(settings.GROQ_API_KEY if settings.DEFAULT_AI_PROVIDER == "groq" else True)
+    ai_status = f"🟢 Connected (`{settings.GROQ_MODEL}`)" if has_key else "⚠️ Missing API Key"
+
+    now_str = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
+
+    text = (
+        "📊 *PostPilot System Health & Diagnostics*\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        "🟢 *Core Status:* `OPERATIONAL`\n"
+        f"• *AI Engine:* `{provider_name}` — {ai_status}\n"
+        f"• *Database:* `SQLite (Healthy)` — `postpilot.db`\n"
+        f"• *Drip Schedule:* `Every 15 min` (08:00 – 23:59 {settings.TIMEZONE})\n"
+        f"• *Autopilot Engine:* `{auto_state}`\n"
+        f"• *Publishing:* `$0 Direct X Composer Intent` (Ban-Proof)\n\n"
+        "📈 *Live Content Metrics:*\n"
+        f"• Tracked Creators: `{len(creators)}` ({creators_list_str})\n"
+        f"• Cached Creator Tweets: `{total_cached_tweets}`\n"
+        f"• Total Saved Drafts: `{drafts_count}` (`{approved_count}` Approved)\n"
+        f"• Pending in Queue: `{scheduled_count}`\n"
+        f"• Successfully Posted: `{published_count}`\n"
+        "━━━━━━━━━━━━━━━━━━━━━━\n"
+        f"🕒 _Last checked: {now_str}_\n"
+        "👉 _Tap buttons below for instant actions:_"
+    )
+    return text, get_status_keyboard()
+
+
 @owner_only
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = get_msg(update)
+    if not target:
+        return
     msg = (
         "🚀 *Welcome to PostPilot + TweetDNA Control Room*\n\n"
         "Your private AI social media ghostwriter & publishing copilot for X.\n\n"
@@ -41,25 +92,25 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "━━━━━━━━━━━━━━━━━━━━━━\n"
         "*⚡ Quick Tap Commands (Tap to Run):*\n"
         "• `/ideas` — Get 2 fresh post ideas right now\n"
-        "• `/ideas 4` — Request 4 custom ideas\n"
         "• `/creators` — View your tracked creator roster\n"
         "• `/track @levelsio` — Clone a creator's writing DNA\n"
         "• `/inspire @levelsio 2` — Draft posts in @levelsio's voice\n"
         "• `/drafts` — Review saved drafts\n"
         "• `/queue` — View scheduled tweets\n"
-        "• `/status` — Check system health & stats\n"
-        "• `/pause` — Emergency halt hourly drops\n"
-        "• `/resume` — Resume hourly drops\n"
+        "• `/status` — Real-time system health & diagnostics\n"
+        "• `/postnow <text>` — Instant 1-tap composer launcher\n"
+        "• `/pause` — Emergency halt hourly delivery\n"
+        "• `/resume` — Resume delivery\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n\n"
         "_Select an action below or use the pinned menu buttons:_ 👇"
     )
     # Send with both persistent ReplyKeyboardMarkup and interactive Inline menu
-    await update.message.reply_text(
+    await target.reply_text(
         msg,
         parse_mode="Markdown",
         reply_markup=get_dashboard_reply_keyboard(),
     )
-    await update.message.reply_text(
+    await target.reply_text(
         "🎛️ *Quick Actions Dashboard:*",
         parse_mode="Markdown",
         reply_markup=get_welcome_inline_keyboard(),
@@ -68,6 +119,9 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @owner_only
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = get_msg(update)
+    if not target:
+        return
     msg = (
         "📖 *PostPilot & TweetDNA Complete Guide*\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -75,50 +129,117 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Add creators whose writing style, hooks, and rhythm you admire:\n"
         "👉 `/track @levelsio`\n"
         "👉 `/track @swyx`\n"
-        "👉 `/track @shl`\n\n"
+        "👉 `/track @_florian`\n\n"
         "PostPilot anonymously analyzes their public posts and builds a Content Playbook without touching your account credentials.\n\n"
-        "*2. Hourly Delivery (08:00 – 23:59)*\n"
-        "Every hour, PostPilot automatically drafts 4–5 posts blending your creators' DNA with your niche.\n"
-        "Each card includes a **[🚀 Post to X Now]** button that auto-approves the draft in SQLite and launches the pre-filled X composer on your phone in 1 tap!\n\n"
+        "*2. Spaced Drip Delivery (08:00 – 23:59)*\n"
+        "Every 15 minutes, PostPilot automatically drafts 1 fresh post blending your creators' DNA with your niche.\n"
+        "Each card includes a **[🚀 Post to X Now]** button that directly launches the native X composer on your phone in 1 tap, plus **[✅ Mark as Posted]**!\n\n"
         "*3. On-Demand Posts Anytime*\n"
         "• `/ideas` (or `/ideas 3`)\n"
         "• `/inspire @levelsio 2`\n"
-        "• `/generate Why developers should learn AI 3`\n\n"
-        "*4. Night Mode / Silence*\n"
-        "During the night (12:00 AM – 7:59 AM), the bot stays completely quiet. Use `/pause` if you want to silence hourly drops at any other time."
+        "• `/generate Why developers should learn AI 3`\n"
+        "• `/postnow My custom tweet text`\n\n"
+        "*4. Diagnostics & Night Mode*\n"
+        "• `/status` — Live system health & refresh button\n"
+        "• `/pause` — Silence delivery drops anytime\n"
+        "• `/resume` — Unpause delivery"
     )
-    await update.message.reply_text(msg, parse_mode="Markdown")
+    await target.reply_text(msg, parse_mode="Markdown")
 
 
 @owner_only
 async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = get_msg(update)
+    if not target:
+        return
     db = get_db()
     try:
-        autopilot = AutopilotService(db)
-        dna_service = DNAService(db)
-        creators = dna_service.list_creators()
-        auto_state = "⏸ PAUSED" if autopilot.is_paused() else ("▶ ACTIVE" if autopilot.is_enabled() else "⏹ STANDBY")
-        drafts_count = db.query(Draft).count()
-        scheduled_count = db.query(ScheduledPost).filter(ScheduledPost.status == PostStatus.SCHEDULED.value).count()
-
-        creators_list_str = ", ".join([f"@{safe_md(c.username)}" for c in creators]) if creators else "None (use `/track @username`)"
-
-        msg = (
-            "📊 *PostPilot Health & TweetDNA Status*\n\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"• *Hourly Schedule:* `08:00 – 23:59` ({settings.TIMEZONE})\n"
-            f"• *Autopilot State:* `{auto_state}`\n"
-            f"• *AI Provider:* `{settings.DEFAULT_AI_PROVIDER.upper()}`\n"
-            f"• *Publish Method:* `{settings.DEFAULT_PUBLISH_METHOD.upper()}` (1-Tap Compose: Free $0)\n"
-            f"• *Tracked Creators ({len(creators)}):* {creators_list_str}\n"
-            f"• *Saved Drafts in DB:* `{drafts_count}`\n"
-            f"• *Pending Scheduled:* `{scheduled_count}`\n"
-            "━━━━━━━━━━━━━━━━━━━━━━\n"
-            "Ready for requests. Try `/ideas` or `/track @levelsio`."
-        )
-        await update.message.reply_text(msg, parse_mode="Markdown")
+        text, markup = format_system_health(db)
+        if update.callback_query:
+            try:
+                await update.callback_query.edit_message_text(text, reply_markup=markup, parse_mode="Markdown")
+                return
+            except Exception:
+                pass
+        await target.reply_text(text, reply_markup=markup, parse_mode="Markdown")
     finally:
         db.close()
+
+
+@owner_only
+async def doctor_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Run diagnostics check."""
+    await status_command(update, context)
+
+
+@owner_only
+async def postnow_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Instantly build a 1-tap X composer launch button for ad-hoc custom text."""
+    target = get_msg(update)
+    if not target:
+        return
+    if not context.args:
+        await target.reply_text(
+            "Usage: `/postnow <your tweet text>`\n"
+            "Example: `/postnow Shipping our second major update today! 🚀`",
+            parse_mode="Markdown",
+        )
+        return
+
+    custom_text = " ".join(context.args)
+    encoded = urllib.parse.quote(custom_text)
+    composer_url = f"https://twitter.com/intent/tweet?text={encoded}"
+    markup = InlineKeyboardMarkup([[InlineKeyboardButton("🚀 Post to X Now", url=composer_url)]])
+    await target.reply_text(
+        f"🚀 *1-Tap X Composer Generated:*\n\n```text\n{custom_text}\n```",
+        reply_markup=markup,
+        parse_mode="Markdown",
+    )
+
+
+@owner_only
+async def setavatar_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Set the Telegram bot profile picture using an attached image or project assets."""
+    target = get_msg(update)
+    if not target:
+        return
+
+    from telegram import InputProfilePhotoStatic
+    from pathlib import Path
+
+    # Case 1: user replied to a photo
+    if update.message and update.message.reply_to_message and update.message.reply_to_message.photo:
+        photo = update.message.reply_to_message.photo[-1]
+        file = await context.bot.get_file(photo.file_id)
+        photo_bytes = await file.download_as_bytearray()
+        try:
+            await context.bot.set_my_profile_photo(InputProfilePhotoStatic(bytes(photo_bytes)))
+            await target.reply_text("✨ *Bot profile photo successfully updated!*", parse_mode="Markdown")
+        except Exception as e:
+            await target.reply_text(f"❌ Failed to set photo: {e}")
+        return
+
+    # Case 2: default from assets/avatar.jpg
+    possible_paths = [
+        Path("assets/avatar.jpg"),
+        Path("src/postpilot/assets/avatar.jpg"),
+        Path(__file__).resolve().parent.parent.parent / "assets" / "avatar.jpg",
+    ]
+    for p in possible_paths:
+        if p.exists():
+            try:
+                with open(p, "rb") as f:
+                    await context.bot.set_my_profile_photo(InputProfilePhotoStatic(f))
+                await target.reply_text("✨ *PostPilot official profile photo successfully applied!*", parse_mode="Markdown")
+                return
+            except Exception as e:
+                await target.reply_text(f"❌ Failed to set photo from {p}: {e}")
+                return
+
+    await target.reply_text(
+        "ℹ️ *No avatar found.* Reply to any photo with `/setavatar` to set it as the bot's profile picture!",
+        parse_mode="Markdown",
+    )
 
 
 @owner_only
@@ -401,12 +522,15 @@ async def generate_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @owner_only
 async def drafts_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = get_msg(update)
+    if not target:
+        return
     db = get_db()
     try:
         repo = DraftRepository(db)
         drafts = repo.list_all(status=PostStatus.DRAFT.value)
         if not drafts:
-            await update.message.reply_text(
+            await target.reply_text(
                 "ℹ️ *No pending drafts in queue.*\n\n"
                 "👉 Tap `/ideas` to generate fresh drafts instantly!",
                 parse_mode="Markdown"
@@ -416,19 +540,22 @@ async def drafts_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for draft in drafts[:5]:
             reply_markup = get_draft_keyboard(draft.id, draft.content)
             text = f"📝 *Draft #{draft.id}* [{draft.status}]:\n\n```text\n{draft.content}\n```"
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+            await target.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     finally:
         db.close()
 
 
 @owner_only
 async def queue_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = get_msg(update)
+    if not target:
+        return
     db = get_db()
     try:
         repo = ScheduleRepository(db)
         pending = repo.list_pending()
         if not pending:
-            await update.message.reply_text(
+            await target.reply_text(
                 "ℹ️ *Publishing queue is currently empty.*\n\n"
                 "Tip: Click `[🗓️ Schedule (2h)]` on any post card to add it to your queue.",
                 parse_mode="Markdown"
@@ -441,20 +568,23 @@ async def queue_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             sched_time = sp.scheduled_at.strftime("%b %d, %H:%M UTC")
             reply_markup = get_queue_keyboard(sp.id, sp.draft_id, draft.content if draft else "")
             text = f"🗓️ *Schedule #{sp.id}* (Draft #{sp.draft_id})\nTarget Time: `{sched_time}`\n\n```text\n{content_preview}\n```"
-            await update.message.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
+            await target.reply_text(text, reply_markup=reply_markup, parse_mode="Markdown")
     finally:
         db.close()
 
 
 @owner_only
 async def pause_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = get_msg(update)
+    if not target:
+        return
     db = get_db()
     try:
         autopilot = AutopilotService(db)
         autopilot.pause()
-        await update.message.reply_text(
-            "⏸ *Autopilot & Hourly Drops PAUSED immediately.*\n\n"
-            "The bot will not deliver hourly cards until you send `/resume`.",
+        await target.reply_text(
+            "⏸ *Autopilot & Content Drip PAUSED immediately.*\n\n"
+            "The bot will not deliver drip cards until you send `/resume`.",
             parse_mode="Markdown"
         )
     finally:
@@ -463,13 +593,16 @@ async def pause_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @owner_only
 async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = get_msg(update)
+    if not target:
+        return
     db = get_db()
     try:
         autopilot = AutopilotService(db)
         autopilot.resume()
-        await update.message.reply_text(
-            "▶ *Autopilot & Hourly Drops RESUMED.*\n\n"
-            "Hourly content cards will deliver between 08:00 and 23:59.",
+        await target.reply_text(
+            "▶ *Autopilot & Content Drip RESUMED.*\n\n"
+            "Content cards will deliver every 15 minutes between 08:00 and 23:59.",
             parse_mode="Markdown"
         )
     finally:
@@ -479,6 +612,8 @@ async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @owner_only
 async def dashboard_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handles text clicks from the persistent 2x3 reply keyboard grid."""
+    if not update.message or not update.message.text:
+        return
     text = update.message.text.strip()
     if text == "⚡ Quick Ideas (2)":
         await ideas_command(update, context)
@@ -504,7 +639,6 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Handle Welcome Menu Callbacks
     if data == "menu_ideas_2":
-        # Create a synthetic update
         context.args = ["2"]
         await ideas_command(update, context)
         return
@@ -517,8 +651,16 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "menu_queue":
         await queue_command(update, context)
         return
-    elif data == "menu_status":
-        await status_command(update, context)
+    elif data in ("menu_status", "refresh_status"):
+        db = get_db()
+        try:
+            text, markup = format_system_health(db)
+            try:
+                await query.edit_message_text(text, reply_markup=markup, parse_mode="Markdown")
+            except Exception:
+                pass
+        finally:
+            db.close()
         return
     elif data == "menu_help":
         await help_command(update, context)

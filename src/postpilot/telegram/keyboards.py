@@ -54,6 +54,21 @@ def get_welcome_inline_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
+def get_status_keyboard() -> InlineKeyboardMarkup:
+    """Action buttons attached to System Health card."""
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 Refresh Diagnostics", callback_data="refresh_status"),
+            InlineKeyboardButton("⚡ Quick Ideas (2)", callback_data="menu_ideas_2"),
+        ],
+        [
+            InlineKeyboardButton("👥 Tracked Creators", callback_data="menu_creators"),
+            InlineKeyboardButton("📝 Review Drafts", callback_data="menu_drafts"),
+        ],
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
 def get_draft_keyboard(draft_id: int, content: str = "") -> InlineKeyboardMarkup:
     """
     Buttons for managing a generated draft card.
