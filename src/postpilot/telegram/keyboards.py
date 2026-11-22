@@ -57,18 +57,16 @@ def get_welcome_inline_keyboard() -> InlineKeyboardMarkup:
 def get_draft_keyboard(draft_id: int, content: str = "") -> InlineKeyboardMarkup:
     """
     Buttons for managing a generated draft card.
-    1-tap 'Post to X Now' auto-approves via server redirect and launches X composer.
+    Direct 1-tap 'Post to X Now' launches the native mobile X composer immediately
+    without going through any external browser or redirect pages.
     """
-    base = settings.base_url
-    if base:
-        composer_url = f"{base.rstrip('/')}/post/{draft_id}"
-    else:
-        encoded_text = urllib.parse.quote(content)
-        composer_url = f"https://twitter.com/intent/tweet?text={encoded_text}"
+    encoded_text = urllib.parse.quote(content)
+    composer_url = f"https://twitter.com/intent/tweet?text={encoded_text}"
 
     keyboard = [
         [
-            InlineKeyboardButton("🚀 Post to X Now (Auto-Approves)", url=composer_url),
+            InlineKeyboardButton("🚀 Post to X Now", url=composer_url),
+            InlineKeyboardButton("✅ Mark as Posted", callback_data=f"posted_{draft_id}"),
         ],
         [
             InlineKeyboardButton("🗓️ Schedule (2h)", callback_data=f"sched_{draft_id}"),
@@ -82,12 +80,12 @@ def get_draft_keyboard(draft_id: int, content: str = "") -> InlineKeyboardMarkup
 def get_queue_keyboard(schedule_id: int, draft_id: int = 0, content: str = "") -> InlineKeyboardMarkup:
     """Buttons for an item in the queue."""
     buttons = []
-    base = settings.base_url
-    if base and draft_id:
-        composer_url = f"{base.rstrip('/')}/post/{draft_id}"
-        buttons.append([InlineKeyboardButton("🚀 Post to X Now (Early)", url=composer_url)])
-    elif content:
+    if content:
         encoded_text = urllib.parse.quote(content)
+        composer_url = f"https://twitter.com/intent/tweet?text={encoded_text}"
+        buttons.append([InlineKeyboardButton("🚀 Post to X Now (Early)", url=composer_url)])
+    elif draft_id:
+        encoded_text = urllib.parse.quote("PostPilot Content")
         composer_url = f"https://twitter.com/intent/tweet?text={encoded_text}"
         buttons.append([InlineKeyboardButton("🚀 Post to X Now (Early)", url=composer_url)])
 

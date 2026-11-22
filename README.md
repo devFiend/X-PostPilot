@@ -10,7 +10,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Architecture: Clean](https://img.shields.io/badge/Architecture-Clean%20%2F%20Modular-green.svg?style=for-the-badge)]()
-[![Tests: Passing](https://img.shields.io/badge/Tests-15%2F15%20Passed-brightgreen.svg?style=for-the-badge)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-19%2F19%20Passed-brightgreen.svg?style=for-the-badge)]()
 [![Cost: $0-First](https://img.shields.io/badge/Cost-%240--First-success.svg?style=for-the-badge)]()
 
 <br/>
@@ -47,9 +47,9 @@
 - **4-Layer DNA Extraction:** Deconstructs Content Pillars, Tweet Formats, Writing Rhythm, and Hook Formulas.
 - **Multi-Creator Synthesis:** Blends the best traits of 5-10 creators into original content tailored to your niche.
 
-### ⏰ Hourly Content Delivery (8:00 AM – 11:59 PM)
-- Automatically delivers **4–5 fresh post cards every hour** directly to your Telegram chat during active hours.
-- Each card comes with a **`[🚀 Post to X Now (Auto-Approves)]`** button that opens the pre-filled X composer on your phone in 1 tap!
+### ⏰ Spaced Content Drip Delivery (8:00 AM – 11:59 PM)
+- Automatically delivers **1 fresh post card every 15 minutes** directly to your Telegram chat during active hours (08:00 – 23:59).
+- Each card comes with a **`[🚀 Post to X Now]`** button that opens the pre-filled X composer directly in your phone's native X app in 1 tap, plus a **`[✅ Mark as Posted]`** button!
 - On-demand requests anytime: `/ideas [count]` or `/inspire @creator [count]`.
 
 ### 🎭 CreatorDNA Content Profiling
