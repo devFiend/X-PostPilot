@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "postpilot"
-version = "0.1.0"
+version = "0.2.0"
 description = "Personal AI-powered content management and publishing assistant for X (Twitter)"
 readme = "README.md"
 authors = [
