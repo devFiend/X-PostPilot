@@ -77,6 +77,35 @@ class DraftRepository:
             return True
         return False
 
+    def get_recent_contents(self, limit: int = 150) -> List[str]:
+        """Fetch contents of recent drafts for deduplication check."""
+        drafts = self.db.query(Draft.content).order_by(Draft.created_at.desc()).limit(limit).all()
+        return [d[0] for d in drafts if d[0]]
+
+    def is_duplicate(self, content: str, threshold: float = 0.60) -> bool:
+        """
+        Check if content is substantially similar to any recently generated or approved draft.
+        Uses token-based Jaccard word similarity to avoid delivering repeated ideas.
+        """
+        if not content or not content.strip():
+            return True
+        import re
+        words_new = set(re.findall(r"\w+", content.lower()))
+        if len(words_new) < 3:
+            return False
+
+        recent_texts = self.get_recent_contents(limit=150)
+        for existing in recent_texts:
+            words_existing = set(re.findall(r"\w+", existing.lower()))
+            if not words_existing:
+                continue
+            intersection = words_new.intersection(words_existing)
+            union = words_new.union(words_existing)
+            similarity = len(intersection) / len(union)
+            if similarity >= threshold:
+                return True
+        return False
+
 
 class ScheduleRepository:
     def __init__(self, db: Session):

@@ -6,6 +6,7 @@ Polished UI with formatted cards, ready-to-click commands, and persistent dashbo
 import urllib.parse
 from datetime import datetime, timedelta, timezone
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.helpers import escape_markdown
 from telegram.ext import ContextTypes
 from postpilot.telegram.security import owner_only
 from postpilot.telegram.keyboards import (
@@ -15,7 +16,7 @@ from postpilot.telegram.keyboards import (
     get_welcome_inline_keyboard,
 )
 from postpilot.database.db import get_db
-from postpilot.database.models import Draft, PostStatus, ScheduledPost
+from postpilot.database.models import Draft, PostStatus, ScheduledPost, PublishedPost
 from postpilot.database.repositories import DraftRepository, ScheduleRepository
 from postpilot.services.content import ContentService
 from postpilot.services.publishing import PublishingService
@@ -24,12 +25,19 @@ from postpilot.services.dna import DNAService
 from postpilot.utils.config import settings
 
 
+def safe_md(text: str) -> str:
+    """Safely escape text for Telegram legacy Markdown to prevent formatting errors on underscores."""
+    if not text:
+        return ""
+    return escape_markdown(str(text), version=1)
+
+
 @owner_only
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "🚀 *Welcome to PostPilot + TweetDNA Control Room*\n\n"
         "Your private AI social media ghostwriter & publishing copilot for X.\n\n"
-        "⏰ *Hourly Drops:* 4–5 fresh post cards sent individually every hour (*08:00 – 23:59*).\n\n"
+        "⏰ *Content Delivery Drip:* Fresh post cards delivered every 15 minutes during waking hours (*08:00 – 23:59*).\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
         "*⚡ Quick Tap Commands (Tap to Run):*\n"
         "• `/ideas` — Get 2 fresh post ideas right now\n"
@@ -93,7 +101,7 @@ async def status_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         drafts_count = db.query(Draft).count()
         scheduled_count = db.query(ScheduledPost).filter(ScheduledPost.status == PostStatus.SCHEDULED.value).count()
 
-        creators_list_str = ", ".join([f"@{c.username}" for c in creators]) if creators else "None (use `/track @username`)"
+        creators_list_str = ", ".join([f"@{safe_md(c.username)}" for c in creators]) if creators else "None (use `/track @username`)"
 
         msg = (
             "📊 *PostPilot Health & TweetDNA Status*\n\n"
@@ -126,8 +134,9 @@ async def track_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     username = args[0].lstrip("@").strip()
+    safe_user = safe_md(username)
     status_msg = await update.message.reply_text(
-        f"🧬 *Scraping & Extracting Content DNA for @{username}...*\n_Analyzing hook patterns, sentence length, and tone..._",
+        f"🧬 *Scraping & Extracting Content DNA for @{safe_user}...*\n_Analyzing hook patterns, sentence length, and tone..._",
         parse_mode="Markdown"
     )
 
@@ -139,20 +148,20 @@ async def track_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         tweets_count = result["tweets_count"]
 
         msg = (
-            f"✅ *TweetDNA Successfully Extracted for @{username}!* 🎉\n"
+            f"✅ *TweetDNA Successfully Extracted for @{safe_user}!* 🎉\n"
             f"📊 Analyzed `{tweets_count}` recent public tweets.\n\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n"
             f"• *Tone & Voice:* `{dna.tone}`\n"
             f"• *Core Pillars:* `{dna.content_pillars}`\n"
             f"• *Hook Patterns:* `{dna.hook_patterns}`\n"
             "━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"@{username} is now in your active generation pool! "
+            f"@{safe_user} is now in your active generation pool! "
             f"Their style will now be used in your hourly drops.\n\n"
-            f"👉 *Try it right now:* `/inspire @{username} 2`"
+            f"👉 *Try it right now:* `/inspire @{safe_user} 2`"
         )
         await status_msg.edit_text(msg, parse_mode="Markdown")
     except Exception as e:
-        await status_msg.edit_text(f"❌ Error tracking @{username}: {e}")
+        await status_msg.edit_text(f"❌ Error tracking @{safe_user}: {e}")
     finally:
         db.close()
 
@@ -177,10 +186,11 @@ async def creators_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         lines = ["👥 *Your Tracked Creator Intelligence Pool:*\n", "━━━━━━━━━━━━━━━━━━━━━━"]
         for c in creators:
             sync_time = c.last_synced_at.strftime("%b %d, %H:%M") if c.last_synced_at else "Recent"
-            lines.append(f"• *@{c.username}* — `{len(c.tweets)}` tweets cached (Synced: {sync_time})")
+            lines.append(f"• *@{safe_md(c.username)}* — `{len(c.tweets)}` tweets cached (Synced: {sync_time})")
 
         lines.append("━━━━━━━━━━━━━━━━━━━━━━")
-        lines.append("\n👉 *Tap to draft:* `/ideas` or `/inspire @{}`".format(creators[0].username))
+        first_creator = safe_md(creators[0].username)
+        lines.append(f"\n👉 *Tap to draft:* `/ideas` or `/inspire @{first_creator}`")
         await update.message.reply_text("\n".join(lines), parse_mode="Markdown")
     finally:
         db.close()
@@ -194,13 +204,14 @@ async def untrack_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     username = args[0].lstrip("@").strip()
+    safe_user = safe_md(username)
     db = get_db()
     try:
         dna_service = DNAService(db)
         if dna_service.untrack_creator(username):
-            await update.message.reply_text(f"🗑️ *@{username}* removed from your tracked creator pool.", parse_mode="Markdown")
+            await update.message.reply_text(f"🗑️ *@{safe_user}* removed from your tracked creator pool.", parse_mode="Markdown")
         else:
-            await update.message.reply_text(f"❌ Creator @{username} not found in tracking pool.", parse_mode="Markdown")
+            await update.message.reply_text(f"❌ Creator @{safe_user} not found in tracking pool.", parse_mode="Markdown")
     finally:
         db.close()
 
@@ -241,7 +252,8 @@ async def ideas_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 status=PostStatus.PENDING_APPROVAL.value,
             )
             reply_markup = get_draft_keyboard(draft.id, draft.content)
-            creator_tag = f"• Style: @{item['creator']}" if item.get('creator') != 'general' else "• General Style"
+            creator_name = item.get("creator", "general")
+            creator_tag = f"• Style: @{safe_md(creator_name)}" if creator_name != "general" else "• General Style"
             card_text = (
                 f"💡 *Idea ({idx}/{len(posts)})* {creator_tag} • `({draft.character_count}/280 chars)`\n\n"
                 f"```text\n{draft.content}\n```"
@@ -255,7 +267,7 @@ async def ideas_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @owner_only
 async def inspire_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Generate posts specifically mimicking a designated creator's style."""
+    """Generate posts specifically mimicking a designated creator's style and rephrasing their tweets."""
     args = context.args
     if not args:
         await update.message.reply_text(
@@ -265,6 +277,7 @@ async def inspire_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     username = args[0].lstrip("@").strip()
+    safe_user = safe_md(username)
     count = 2
     if len(args) > 1:
         try:
@@ -273,34 +286,63 @@ async def inspire_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             pass
 
     status_msg = await update.message.reply_text(
-        f"🎨 *Synthesizing {count} posts in @{username}'s exact style...*",
+        f"🎨 *Synthesizing {count} posts in @{safe_user}'s exact style...*",
         parse_mode="Markdown"
     )
 
     db = get_db()
     try:
         dna_service = DNAService(db)
-        creator = dna_service.repo.get_by_username(username)
+        creator = dna_service.repo.get_by_username(username.lower())
         if not creator:
-            await status_msg.edit_text(f"ℹ️ @{username} not tracked yet. Auto-analyzing now...", parse_mode="Markdown")
+            await status_msg.edit_text(f"ℹ️ @{safe_user} not tracked yet. Auto-analyzing now...", parse_mode="Markdown")
             await dna_service.track_creator(username)
-            creator = dna_service.repo.get_by_username(username)
+            creator = dna_service.repo.get_by_username(username.lower())
 
         dna = dna_service.repo.get_dna(creator.id)
+        cached_tweets = dna_service.repo.get_creator_tweets(creator.id, limit=30)
         generator = dna_service.generator
-        generated_texts = await generator.generate_from_dna(
-            dna=dna,
-            creator_username=username,
-            topic="Building products as an indie software developer",
-            count=count,
-        )
+        draft_repo = DraftRepository(db)
+
+        generated_texts = []
+        # First try to rephrase actual tweets from this creator
+        if cached_tweets:
+            import random
+            shuffled = list(cached_tweets)
+            random.shuffle(shuffled)
+            for tw in shuffled:
+                if len(generated_texts) >= count:
+                    break
+                if draft_repo.is_duplicate(tw.text, threshold=0.60):
+                    continue
+                rephrased = await generator.generate_rephrased_tweet(
+                    source_tweet=tw.text,
+                    creator_username=creator.username,
+                    dna=dna,
+                )
+                if rephrased and not draft_repo.is_duplicate(rephrased, threshold=0.55):
+                    generated_texts.append(rephrased)
+
+        # Fallback to DNA generation with sample tweets if not enough generated
+        if len(generated_texts) < count:
+            remaining = count - len(generated_texts)
+            sample_texts = [t.text for t in cached_tweets[:3]]
+            dna_posts = await generator.generate_from_dna(
+                dna=dna,
+                creator_username=username,
+                topic="Building products as an indie software developer",
+                count=remaining,
+                sample_tweets=sample_texts,
+            )
+            for p in dna_posts:
+                if not draft_repo.is_duplicate(p, threshold=0.55):
+                    generated_texts.append(p)
 
         try:
             await status_msg.delete()
         except Exception:
             pass
 
-        draft_repo = DraftRepository(db)
         for idx, text in enumerate(generated_texts, start=1):
             draft = draft_repo.create(
                 content=text,
@@ -311,12 +353,12 @@ async def inspire_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
             reply_markup = get_draft_keyboard(draft.id, draft.content)
             card_text = (
-                f"🎨 *Style: @{username} ({idx}/{len(generated_texts)})* • `({draft.character_count}/280 chars)`\n\n"
+                f"🎨 *Style: @{safe_user} ({idx}/{len(generated_texts)})* • `({draft.character_count}/280 chars)`\n\n"
                 f"```text\n{draft.content}\n```"
             )
             await update.message.reply_text(card_text, reply_markup=reply_markup, parse_mode="Markdown")
     except Exception as e:
-        await update.message.reply_text(f"❌ Error inspiring from @{username}: {e}")
+        await update.message.reply_text(f"❌ Error inspiring from @{safe_user}: {e}")
     finally:
         db.close()
 
@@ -488,37 +530,60 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         draft_repo = DraftRepository(db)
         sched_repo = ScheduleRepository(db)
 
-        if data.startswith("approve_"):
-            draft_id = int(data.split("_")[1])
+        if data.startswith("posted_"):
+            draft_id = int(data.removeprefix("posted_"))
             draft = draft_repo.get_by_id(draft_id)
             draft_repo.update_status(draft_id, PostStatus.APPROVED.value)
-            
+
+            pub = PublishedPost(
+                draft_id=draft_id,
+                platform="X",
+                platform_post_id="manual_handoff",
+                publication_method="manual",
+                status="SUCCESS",
+            )
+            db.add(pub)
+            db.commit()
+
+            await query.edit_message_text(
+                f"🎉 *Draft #{draft_id} marked as POSTED to X!*\nSaved into publication history.",
+                parse_mode="Markdown",
+            )
+
+        elif data.startswith("approve_"):
+            draft_id = int(data.removeprefix("approve_"))
+            draft = draft_repo.get_by_id(draft_id)
+            draft_repo.update_status(draft_id, PostStatus.APPROVED.value)
+
             keyboard = []
             if draft:
                 encoded = urllib.parse.quote(draft.content)
                 composer_url = f"https://twitter.com/intent/tweet?text={encoded}"
-                keyboard.append([InlineKeyboardButton("🚀 Post to X Now", url=composer_url)])
-            
+                keyboard.append([
+                    InlineKeyboardButton("🚀 Post to X Now", url=composer_url),
+                    InlineKeyboardButton("✅ Mark as Posted", callback_data=f"posted_{draft_id}"),
+                ])
+
             reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
             await query.edit_message_text(
-                f"✅ *Draft #{draft_id} marked as APPROVED!*\nReady to dispatch or schedule.",
+                f"✅ *Draft #{draft_id} marked as APPROVED!*\nReady to post or schedule.",
                 reply_markup=reply_markup,
-                parse_mode="Markdown"
+                parse_mode="Markdown",
             )
 
         elif data.startswith("reject_"):
-            draft_id = int(data.split("_")[1])
+            draft_id = int(data.removeprefix("reject_"))
             draft_repo.update_status(draft_id, PostStatus.CANCELLED.value)
             await query.edit_message_text(f"❌ *Draft #{draft_id} DISMISSED.*", parse_mode="Markdown")
 
         elif data.startswith("sched_"):
-            draft_id = int(data.split("_")[1])
+            draft_id = int(data.removeprefix("sched_"))
             draft = draft_repo.get_by_id(draft_id)
             draft_repo.update_status(draft_id, PostStatus.APPROVED.value)
             target = datetime.now(timezone.utc) + timedelta(hours=2)
             sched_repo.schedule(draft_id, target, settings.TIMEZONE)
             draft_repo.update_status(draft_id, PostStatus.SCHEDULED.value)
-            
+
             keyboard = []
             if draft:
                 encoded = urllib.parse.quote(draft.content)
@@ -533,7 +598,7 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
         elif data.startswith("cancelsched_"):
-            sched_id = int(data.split("_")[1])
+            sched_id = int(data.removeprefix("cancelsched_"))
             sched_repo.cancel(sched_id)
             await query.edit_message_text(f"🚫 *Schedule #{sched_id} CANCELLED.*", parse_mode="Markdown")
 
