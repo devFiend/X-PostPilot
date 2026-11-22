@@ -103,10 +103,12 @@ async def test_trend_service_scan(in_memory_db):
     ]
 
     with patch.object(service.collector, "collect_all_candidates", new_callable=AsyncMock) as mock_coll, \
-         patch.object(service.generator.router, "generate_with_fallback", new_callable=AsyncMock) as mock_llm:
+         patch.object(service.analyzer.router, "generate_with_fallback", new_callable=AsyncMock) as mock_analyzer_llm, \
+         patch.object(service.generator.router, "generate_with_fallback", new_callable=AsyncMock) as mock_gen_llm:
 
         mock_coll.return_value = mock_candidates
-        mock_llm.return_value = (["TAKE_1: Open inference models are winning the long game.\nTAKE_2: How to host your own inference stack for $10/mo."], "groq")
+        mock_analyzer_llm.return_value = (["TOPIC: DeepSeek Inference\nSUMMARY: New open framework\nDEBATE: Huge efficiency gains for developers."], "groq")
+        mock_gen_llm.return_value = (["TAKE_1: Open inference models are winning the long game.\nTAKE_2: How to host your own inference stack for $10/mo."], "groq")
 
         results = await service.scan_live_trends(limit=1)
         assert len(results) == 1
