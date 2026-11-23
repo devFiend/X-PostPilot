@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str | None = None
     GROQ_MODEL: str = "openai/gpt-oss-120b"
     GEMINI_API_KEY: str | None = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3:8b"
     DEFAULT_AI_PROVIDER: str = "groq"

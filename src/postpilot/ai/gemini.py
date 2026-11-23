@@ -9,9 +9,9 @@ from postpilot.utils.config import settings
 
 
 class GeminiProvider(BaseAIProvider):
-    def __init__(self, api_key: str | None = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or settings.GEMINI_API_KEY
-        self.model = model
+        self.model = model or getattr(settings, "GEMINI_MODEL", "gemini-2.5-flash")
 
     def get_provider_name(self) -> str:
         return "gemini"
