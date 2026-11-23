@@ -27,14 +27,19 @@ class GeminiProvider(BaseAIProvider):
         except Exception:
             return False
 
-    async def generate(self, prompt: str, system_prompt: str, count: int = 1) -> List[str]:
+    async def generate(
+        self, prompt: str, system_prompt: str, count: int = 1, temperature: float = 0.85
+    ) -> List[str]:
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is not configured in .env")
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.api_key}"
         full_prompt = f"{system_prompt}\n\nTask:\n{prompt}\n\nPlease output exactly {count} distinct post options separated by '---'."
         payload = {
-            "contents": [{"parts": [{"text": full_prompt}]}]
+            "contents": [{"parts": [{"text": full_prompt}]}],
+            "generationConfig": {
+                "temperature": temperature,
+            },
         }
 
         async with httpx.AsyncClient(timeout=30.0) as client:

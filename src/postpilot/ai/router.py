@@ -25,7 +25,12 @@ class AIRouter:
         return self.providers[target]
 
     async def generate_with_fallback(
-        self, prompt: str, system_prompt: str, preferred: Optional[str] = None, count: int = 1
+        self,
+        prompt: str,
+        system_prompt: str,
+        preferred: Optional[str] = None,
+        count: int = 1,
+        temperature: float = 0.85,
     ) -> tuple[List[str], str]:
         """Try preferred provider; fall back automatically if requested and needed."""
         provider_name = preferred or settings.DEFAULT_AI_PROVIDER
@@ -35,7 +40,7 @@ class AIRouter:
         for prov_id in candidates:
             provider = self.providers[prov_id]
             try:
-                results = await provider.generate(prompt, system_prompt, count=count)
+                results = await provider.generate(prompt, system_prompt, count=count, temperature=temperature)
                 if results:
                     return results, prov_id
             except Exception as e:

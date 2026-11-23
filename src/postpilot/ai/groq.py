@@ -28,7 +28,9 @@ class GroqProvider(BaseAIProvider):
         except Exception:
             return False
 
-    async def generate(self, prompt: str, system_prompt: str, count: int = 1) -> List[str]:
+    async def generate(
+        self, prompt: str, system_prompt: str, count: int = 1, temperature: float = 0.85
+    ) -> List[str]:
         if not self.api_key:
             raise ValueError("GROQ_API_KEY is not configured in .env")
 
@@ -47,7 +49,7 @@ class GroqProvider(BaseAIProvider):
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            "temperature": 0.7,
+            "temperature": temperature,
         }
 
         async with httpx.AsyncClient(timeout=30.0) as client:
