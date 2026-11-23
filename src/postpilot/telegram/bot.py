@@ -32,6 +32,9 @@ from postpilot.telegram.handlers import (
     ideas_command,
     inspire_command,
     trends_command,
+    reply_command,
+    thread_command,
+    voice_message_handler,
     dashboard_text_handler,
     callback_handler,
 )
@@ -42,6 +45,8 @@ async def setup_bot_commands(application):
     Registers native command menu and applies bot profile branding (name, description, avatar).
     """
     commands = [
+        BotCommand("reply", "💬 Draft 3 high-signal replies to any tweet"),
+        BotCommand("thread", "🧵 Draft a viral 4-5 tweet thread"),
         BotCommand("trends", "🔥 Scan live niche trends & draft takes"),
         BotCommand("ideas", "⚡ Generate on-demand post ideas"),
         BotCommand("creators", "👥 View your tracked creator pool"),
@@ -125,6 +130,11 @@ def run_telegram_bot():
     app.add_handler(CommandHandler("untrack", untrack_command))
     app.add_handler(CommandHandler("ideas", ideas_command))
     app.add_handler(CommandHandler("inspire", inspire_command))
+
+    # Engagement & Creation Copilot (Replies, Viral Threads, Audio Brain Dump)
+    app.add_handler(CommandHandler("reply", reply_command))
+    app.add_handler(CommandHandler("thread", thread_command))
+    app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO, voice_message_handler))
 
     # Persistent Reply Keyboard text handler (Quick Ideas, Review Drafts, etc.)
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, dashboard_text_handler))

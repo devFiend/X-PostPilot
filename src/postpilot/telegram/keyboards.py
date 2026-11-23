@@ -24,6 +24,10 @@ def get_dashboard_reply_keyboard() -> ReplyKeyboardMarkup:
             KeyboardButton("⚡ Quick Ideas (2)"),
         ],
         [
+            KeyboardButton("🧵 Viral Thread"),
+            KeyboardButton("💬 Smart Reply"),
+        ],
+        [
             KeyboardButton("👥 Tracked Creators"),
             KeyboardButton("📝 Review Drafts"),
         ],
@@ -41,6 +45,10 @@ def get_welcome_inline_keyboard() -> InlineKeyboardMarkup:
         [
             InlineKeyboardButton("🔥 Live Niche Trends", callback_data="menu_trends"),
             InlineKeyboardButton("⚡ Quick Ideas (2)", callback_data="menu_ideas_2"),
+        ],
+        [
+            InlineKeyboardButton("🧵 Viral Thread", callback_data="menu_thread"),
+            InlineKeyboardButton("💬 Smart Reply", callback_data="menu_reply"),
         ],
         [
             InlineKeyboardButton("👥 My Creators", callback_data="menu_creators"),
@@ -108,4 +116,26 @@ def get_queue_keyboard(schedule_id: int, draft_id: int = 0, content: str = "") -
         buttons.append([InlineKeyboardButton("🚀 Post to X Now (Early)", url=composer_url)])
 
     buttons.append([InlineKeyboardButton("🚫 Cancel Schedule", callback_data=f"cancelsched_{schedule_id}")])
+    return InlineKeyboardMarkup(buttons)
+
+
+def get_reply_card_keyboard(url: str) -> InlineKeyboardMarkup:
+    """Button attached to each individual reply card for direct posting."""
+    keyboard = [
+        [
+            InlineKeyboardButton("🚀 Post Reply on X", url=url),
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
+
+def get_thread_keyboard(hook_url: str, topic: str = "") -> InlineKeyboardMarkup:
+    """Action buttons attached to a completed viral thread card."""
+    buttons = []
+    if hook_url:
+        buttons.append([InlineKeyboardButton("🚀 Post Tweet 1 (Hook)", url=hook_url)])
+    buttons.append([
+        InlineKeyboardButton("⚡ Quick Ideas (2)", callback_data="menu_ideas_2"),
+        InlineKeyboardButton("🔥 Niche Trends", callback_data="menu_trends"),
+    ])
     return InlineKeyboardMarkup(buttons)
