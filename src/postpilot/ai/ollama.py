@@ -24,13 +24,18 @@ class OllamaProvider(BaseAIProvider):
         except Exception:
             return False
 
-    async def generate(self, prompt: str, system_prompt: str, count: int = 1) -> List[str]:
+    async def generate(
+        self, prompt: str, system_prompt: str, count: int = 1, temperature: float = 0.85
+    ) -> List[str]:
         endpoint = f"{self.base_url}/api/generate"
         full_prompt = f"{system_prompt}\n\nUser topic: {prompt}\n\nReturn {count} post variants separated by '---'."
         payload = {
             "model": self.model,
             "prompt": full_prompt,
             "stream": False,
+            "options": {
+                "temperature": temperature,
+            },
         }
 
         async with httpx.AsyncClient(timeout=60.0) as client:

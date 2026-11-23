@@ -89,19 +89,27 @@ class AutopilotService:
         if recent_schedules >= settings.MAX_POSTS_PER_DAY:
             raise RuntimeError(f"Daily post limit reached ({settings.MAX_POSTS_PER_DAY} posts/day).")
 
-        # Determine category from rotation index
+        # Determine category and archetype from rotation index
         current_idx = int(self.settings_repo.get("AUTOPILOT_ROTATION_IDX", "0"))
         category = self.CATEGORY_ROTATION[current_idx % len(self.CATEGORY_ROTATION)]
         self.settings_repo.set("AUTOPILOT_ROTATION_IDX", str((current_idx + 1) % len(self.CATEGORY_ROTATION)))
 
         profile = self.db.query(CreatorProfile).first()
-        topic_to_use = topic or (profile.content_pillars.split(",")[0] if profile else "Software Engineering and AI")
+        if profile and profile.content_pillars:
+            pillars = [p.strip() for p in profile.content_pillars.split(",") if p.strip()]
+            topic_to_use = topic or (pillars[current_idx % len(pillars)] if pillars else "Software Engineering and AI")
+        else:
+            topic_to_use = topic or "Software Engineering and AI"
+
+        from postpilot.services.content import TWEET_ARCHETYPES
+        archetype = TWEET_ARCHETYPES[current_idx % len(TWEET_ARCHETYPES)]["name"]
 
         # Generate posts
         drafts = await self.content_service.generate_drafts(
             topic=topic_to_use,
             category=category,
             count=1,
+            archetype=archetype,
         )
 
         mode = self.get_mode()
