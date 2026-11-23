@@ -55,6 +55,24 @@
   - *Angle 2: Builder Breakdown* (Practical lessons and implementation takeaways for engineers).
 - **1-Tap Publishing:** Send `/trends` in Telegram or run `postpilot trends` in the CLI to scan and post in seconds.
 
+### 💬 Smart "Reply Guy" Assistant
+- **High-Signal Engagement:** Automatically drafts 3 distinct, non-sycophantic replies to any tweet text or URL (`/reply <tweet or X link>`):
+  - *Angle 1: Builder Experience* (Real-world practitioner nuance and edge cases).
+  - *Angle 2: Contrarian Edge* (Respectful counter-perspective or unstated trade-off).
+  - *Angle 3: Value-Add Punch* (Sharp, high-signal 1-liner).
+- **1-Tap Reply Links:** Direct `[🚀 Post Reply on X]` intent links pre-filled with the exact `in_reply_to` status ID.
+
+### 🧵 Viral Thread Architect
+- **Multi-Tweet Retention Playbook:** Type `/thread <topic>` to generate a structured 4-to-5 tweet thread:
+  - *Tweet 1 (The Hook):* High-tension premise ending in `🧵` or `👇`.
+  - *Tweets 2–4 (The Breakdown):* Numbered value nuggets (`1/`, `2/`) with zero corporate fluff.
+  - *Tweet 5 (The Wrap & CTA):* Synthesis + follow/bookmark callout.
+
+### 🎙️ Voice Note / Audio Brain Dump to Tweet
+- **Zero-Friction Audio Capture:** Send or forward any voice memo or audio clip directly to PostPilot on Telegram.
+- **Instant Whisper Transcription:** Powered by Groq's high-speed `whisper-large-v3` API.
+- **Auto-Polishing:** Instantly distills your raw, spoken thoughts into 2 high-impact X drafts with 1-tap post buttons.
+
 ### ⏰ Spaced Content Drip Delivery (8:00 AM – 11:59 PM)
 - Automatically delivers **1 fresh post card every 15 minutes** directly to your Telegram chat during active hours (08:00 – 23:59).
 - Each card comes with a **`[🚀 Post to X Now]`** button that opens the pre-filled X composer directly in your phone's native X app in 1 tap, plus a **`[✅ Mark as Posted]`** button!

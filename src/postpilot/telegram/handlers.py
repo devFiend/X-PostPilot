@@ -15,6 +15,8 @@ from postpilot.telegram.keyboards import (
     get_dashboard_reply_keyboard,
     get_welcome_inline_keyboard,
     get_status_keyboard,
+    get_reply_card_keyboard,
+    get_thread_keyboard,
 )
 from postpilot.database.db import get_db
 from postpilot.database.models import Draft, PostStatus, ScheduledPost, PublishedPost
@@ -24,6 +26,9 @@ from postpilot.services.publishing import PublishingService
 from postpilot.services.autopilot import AutopilotService
 from postpilot.services.dna import DNAService
 from postpilot.services.trends import TrendPulseService
+from postpilot.services.replies import SmartReplyService
+from postpilot.services.threads import ThreadService
+from postpilot.services.audio import AudioTranscriptionService
 from postpilot.utils.config import settings
 
 
@@ -675,8 +680,162 @@ async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 @owner_only
+async def reply_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Generate 3 high-signal, non-sycophantic replies to any tweet or topic.
+    Usage: /reply <tweet text or X link>
+    """
+    target = get_msg(update)
+    if not target:
+        return
+
+    raw_input = " ".join(context.args).strip() if context.args else ""
+    if not raw_input:
+        msg = (
+            "💬 *Smart Reply Guy Assistant*\n\n"
+            "Generate 3 high-signal, authentic replies to drive profile visits.\n\n"
+            "👉 *Usage:*\n"
+            "• `/reply <paste tweet text>`\n"
+            "• `/reply https://x.com/username/status/123456789`\n"
+            "• Or simply paste an X/Twitter link right here into chat!"
+        )
+        await target.reply_text(msg, parse_mode="Markdown")
+        return
+
+    status_msg = await target.reply_text("⚡ *Analyzing tweet & generating 3 high-signal replies...*", parse_mode="Markdown")
+
+    reply_svc = SmartReplyService()
+    try:
+        options = await reply_svc.generate_replies(source_tweet=raw_input)
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
+
+        intro = "💬 *3 High-Signal Replies Ready to Post:*\n━━━━━━━━━━━━━━━━━━━━━━"
+        await target.reply_text(intro, parse_mode="Markdown")
+
+        for opt in options:
+            card_text = (
+                f"*{opt['angle']}* ({opt['character_count']} chars)\n\n"
+                f"{opt['content']}"
+            )
+            await target.reply_text(
+                card_text,
+                reply_markup=get_reply_card_keyboard(opt["url"]),
+            )
+    except Exception as e:
+        await target.reply_text(f"⚠️ *Could not generate replies:* {safe_md(str(e))}", parse_mode="Markdown")
+
+
+@owner_only
+async def thread_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Draft a viral 4-to-5 tweet thread on any topic.
+    Usage: /thread <topic>
+    """
+    target = get_msg(update)
+    if not target:
+        return
+
+    topic = " ".join(context.args).strip() if context.args else ""
+    if not topic:
+        topic = "Lessons learned building and shipping modern tech products"
+
+    status_msg = await target.reply_text(
+        f"🧵 *Crafting viral thread breakdown on:* _{safe_md(topic)}_\nGenerating hooks & insights...",
+        parse_mode="Markdown",
+    )
+
+    thread_svc = ThreadService()
+    try:
+        thread_data = await thread_svc.generate_thread(topic=topic, tweet_count=4)
+        try:
+            await status_msg.delete()
+        except Exception:
+            pass
+
+        header = (
+            f"🧵 *Viral Thread Ready ({thread_data['tweet_count']} Tweets)*\n"
+            f"📌 *Topic:* {safe_md(topic)}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+        )
+        body = "\n\n".join([f"*[Tweet {t['num']}]* ({t['character_count']} chars)\n{t['content']}" for t in thread_data["tweets"]])
+
+        await target.reply_text(
+            header + body,
+            reply_markup=get_thread_keyboard(thread_data["hook_composer_url"], topic=topic),
+        )
+    except Exception as e:
+        await target.reply_text(f"⚠️ *Could not generate thread:* {safe_md(str(e))}", parse_mode="Markdown")
+
+
+@owner_only
+async def voice_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Transcribes voice notes or audio messages with Groq Whisper,
+    then transforms the raw brain dump into ready-to-post X drafts.
+    """
+    if not update.message:
+        return
+
+    voice = update.message.voice or update.message.audio
+    if not voice:
+        return
+
+    status_msg = await update.message.reply_text(
+        "🎙️ *Listening to your voice note...*\nTranscribing with Groq Whisper...",
+        parse_mode="Markdown",
+    )
+
+    try:
+        # Download voice note file from Telegram
+        file_obj = await context.bot.get_file(voice.file_id)
+        file_bytearray = await file_obj.download_as_bytearray()
+        audio_bytes = bytes(file_bytearray)
+
+        # Transcribe with Whisper
+        audio_svc = AudioTranscriptionService()
+        transcript = await audio_svc.transcribe_audio_bytes(audio_bytes, filename="voice.ogg")
+
+        if not transcript:
+            await status_msg.edit_text("⚠️ Could not transcribe audio. Please try speaking clearly or send text.", parse_mode="Markdown")
+            return
+
+        await status_msg.edit_text(
+            f"🎙️ *Transcribed Thought:*\n_\"{safe_md(transcript)}\"_\n\n✨ Polishing into high-impact X posts...",
+            parse_mode="Markdown",
+        )
+
+        # Generate drafts from transcript
+        db = get_db()
+        try:
+            content_svc = ContentService(db)
+            drafts = await content_svc.generate_drafts(
+                topic=transcript,
+                category="voice_braindump",
+                count=2,
+            )
+
+            for d in drafts:
+                card = (
+                    f"🎙️ *Voice-to-Post Draft #{d.id}* ({d.character_count} chars)\n\n"
+                    f"{d.content}"
+                )
+                await update.message.reply_text(
+                    card,
+                    reply_markup=get_draft_keyboard(d.id, d.content),
+                )
+        finally:
+            db.close()
+
+    except Exception as e:
+        await status_msg.edit_text(f"⚠️ *Voice note processing error:* {safe_md(str(e))}", parse_mode="Markdown")
+
+
+@owner_only
 async def dashboard_text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handles text clicks from the persistent reply keyboard grid."""
+    """Handles text clicks from the persistent reply keyboard grid and auto-detects links."""
     if not update.message or not update.message.text:
         return
     text = update.message.text.strip()
@@ -684,6 +843,12 @@ async def dashboard_text_handler(update: Update, context: ContextTypes.DEFAULT_T
         await trends_command(update, context)
     elif text == "⚡ Quick Ideas (2)":
         await ideas_command(update, context)
+    elif text == "🧵 Viral Thread":
+        context.args = []
+        await thread_command(update, context)
+    elif text == "💬 Smart Reply":
+        context.args = []
+        await reply_command(update, context)
     elif text == "👥 Tracked Creators":
         await creators_command(update, context)
     elif text == "📝 Review Drafts":
@@ -694,6 +859,10 @@ async def dashboard_text_handler(update: Update, context: ContextTypes.DEFAULT_T
         await status_command(update, context)
     elif text == "📖 Guide & Help":
         await help_command(update, context)
+    elif "twitter.com/" in text or "x.com/" in text:
+        # Auto-detect tweet URL and generate replies!
+        context.args = [text]
+        await reply_command(update, context)
 
 
 @owner_only
@@ -711,6 +880,14 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "menu_ideas_2":
         context.args = ["2"]
         await ideas_command(update, context)
+        return
+    elif data == "menu_thread":
+        context.args = []
+        await thread_command(update, context)
+        return
+    elif data == "menu_reply":
+        context.args = []
+        await reply_command(update, context)
         return
     elif data == "menu_creators":
         await creators_command(update, context)
