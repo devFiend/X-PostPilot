@@ -755,17 +755,54 @@ async def thread_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             pass
 
-        header = (
+        intro = (
             f"🧵 *Viral Thread Ready ({thread_data['tweet_count']} Tweets)*\n"
             f"📌 *Topic:* {safe_md(topic)}\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"💡 *How to post in 10s:*\n"
+            f"1. Tap **[🚀 Launch Tweet 1 on X]** below to open the X composer.\n"
+            f"2. Tap any tweet card below to instantly copy it to your clipboard.\n"
+            f"3. In the X app, tap **`+`** to add each copied tweet to your thread!"
         )
-        body = "\n\n".join([f"*[Tweet {t['num']}]* ({t['character_count']} chars)\n{t['content']}" for t in thread_data["tweets"]])
+        await target.reply_text(intro, parse_mode="Markdown")
 
-        await target.reply_text(
-            header + body,
-            reply_markup=get_thread_keyboard(thread_data["hook_composer_url"], topic=topic),
-        )
+        tweets = thread_data["tweets"]
+        for i, t in enumerate(tweets):
+            encoded = urllib.parse.quote(t["content"])
+            composer_url = f"https://twitter.com/intent/tweet?text={encoded}"
+
+            if i == 0:
+                header_badge = f"🎣 *Tweet {t['num']} — The Hook* • `({t['character_count']}/280 chars)`"
+                btn_text = "🚀 Launch Tweet 1 on X"
+            elif i == len(tweets) - 1:
+                header_badge = f"🎯 *Tweet {t['num']} — The Wrap & CTA* • `({t['character_count']}/280 chars)`"
+                btn_text = "🚀 Compose in X"
+            else:
+                header_badge = f"📝 *Tweet {t['num']}* • `({t['character_count']}/280 chars)`"
+                btn_text = "🚀 Compose in X"
+
+            markup = InlineKeyboardMarkup([[
+                InlineKeyboardButton(btn_text, url=composer_url),
+            ]])
+
+            card_text = (
+                f"{header_badge}\n\n"
+                f"```text\n{t['content']}\n```"
+            )
+            await target.reply_text(card_text, parse_mode="Markdown", reply_markup=markup)
+
+        # Footer actions
+        footer_markup = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("🧵 Draft Another Thread", callback_data="menu_thread"),
+                InlineKeyboardButton("⚡ Quick Ideas (2)", callback_data="menu_ideas_2"),
+            ],
+            [
+                InlineKeyboardButton("🔥 Niche Trends", callback_data="menu_trends"),
+                InlineKeyboardButton("📝 Review Drafts", callback_data="menu_drafts"),
+            ],
+        ])
+        await target.reply_text("✨ *All thread cards delivered! Select your next action:*", parse_mode="Markdown", reply_markup=footer_markup)
     except Exception as e:
         await target.reply_text(f"⚠️ *Could not generate thread:* {safe_md(str(e))}", parse_mode="Markdown")
 

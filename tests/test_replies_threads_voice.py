@@ -8,6 +8,8 @@ import pytest
 from postpilot.services.replies import SmartReplyService
 from postpilot.services.threads import ThreadService
 from postpilot.services.audio import AudioTranscriptionService
+from postpilot.telegram.handlers import thread_command
+from postpilot.utils.config import settings
 
 
 def test_smart_reply_tweet_id_extraction():
@@ -100,3 +102,45 @@ async def test_audio_transcription_whisper():
         mock_post.assert_called_once()
         call_kwargs = mock_post.call_args[1]
         assert call_kwargs["data"]["model"] == "whisper-large-v3"
+
+
+@pytest.mark.asyncio
+async def test_thread_command_delivers_individual_cards(monkeypatch):
+    monkeypatch.setattr(settings, "TELEGRAM_OWNER_ID", 123456789)
+
+    update = MagicMock()
+    update.effective_user.id = 123456789
+    update.effective_message = MagicMock()
+    update.effective_message.reply_text = AsyncMock()
+    update.message = update.effective_message
+
+    context = MagicMock()
+    context.args = ["Building", "micro-SaaS"]
+
+    mock_thread_data = {
+        "topic": "Building micro-SaaS",
+        "provider": "groq",
+        "tweet_count": 3,
+        "hook_composer_url": "https://twitter.com/intent/tweet?text=Hook",
+        "tweets": [
+            {"num": "1/3", "content": "Hook text 🧵", "character_count": 11},
+            {"num": "2/3", "content": "Value point 1", "character_count": 13},
+            {"num": "3/3", "content": "Wrap and CTA", "character_count": 12},
+        ],
+    }
+
+    with patch("postpilot.telegram.handlers.ThreadService.generate_thread", new_callable=AsyncMock) as mock_gen:
+        mock_gen.return_value = mock_thread_data
+        await thread_command(update, context)
+
+        # 1 status msg + 1 intro + 3 tweet cards + 1 footer = 6 messages sent!
+        assert update.effective_message.reply_text.call_count == 6
+        calls = update.effective_message.reply_text.call_args_list
+
+        # Verify tweet cards have code blocks for 1-tap copy
+        card_call_1 = calls[2][0][0]
+        assert "```text\nHook text 🧵\n```" in card_call_1
+        assert "Tweet 1/3 — The Hook" in card_call_1
+
+        card_call_2 = calls[3][0][0]
+        assert "```text\nValue point 1\n```" in card_call_2
