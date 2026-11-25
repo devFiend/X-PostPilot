@@ -10,7 +10,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![Architecture: Clean](https://img.shields.io/badge/Architecture-Clean%20%2F%20Modular-green.svg?style=for-the-badge)]()
-[![Tests: Passing](https://img.shields.io/badge/Tests-27%2F27%20Passed-brightgreen.svg?style=for-the-badge)]()
+[![Tests: Passing](https://img.shields.io/badge/Tests-40%2F40%20Passed-brightgreen.svg?style=for-the-badge)]()
 [![Cost: $0-First](https://img.shields.io/badge/Cost-%240--First-success.svg?style=for-the-badge)]()
 
 <br/>
@@ -38,16 +38,16 @@
 
 ### 🧠 Multi-Provider AI Brain ($0-First)
 - **Groq (Default):** Generates high-velocity, scroll-stopping post variants in $<2$ seconds using LLaMA-3 / GPT-OSS models.
-- **Google Gemini:** Deep content planning and long-form breakdown using Gemini's generous free tier.
+- **Google Gemini (Gemini 2.5 Flash / Flash Lite):** Deep technical content planning, multimodal voice processing, and dynamic temperature variation.
 - **Ollama:** 100% private, offline generation with zero internet reliance.
-- **Strict Guardrails:** Built-in validator guarantees every post stays strictly under 280 characters with no corporate fluff or repetitive buzzwords.
+- **Strict Guardrails:** Built-in validator guarantees every post stays strictly under 280 characters with no corporate fluff, repetitive sentence starters, or bot-like lecturing.
 
 ### 🧬 TweetDNA Creator Intelligence & Style Cloning
-- **Anonymous Public Tweet Scraping ($0 Ban-Proof):** Scrapes recent public tweets from creators you admire (`@levelsio`, `@swyx`, `@shl`, `@karpathy`) without using your personal account or paid APIs.
+- **Anonymous Public Tweet Scraping ($0 Ban-Proof):** Scrapes recent public tweets from creators you admire (`@levelsio`, `@swyx`, `@shl`, `@karpathy`) via Jina Reader fallback without using your personal account or paid APIs.
 - **4-Layer DNA Extraction:** Deconstructs Content Pillars, Tweet Formats, Writing Rhythm, and Hook Formulas.
-- **Multi-Creator Synthesis:** Blends the best traits of 5-10 creators into original content tailored to your niche.
+- **Dynamic Topic Bank:** Automatically rotates through 15+ high-signal software, architecture, and indie hacking subtopics so posts never sound repetitive.
 
-### 🔥 Real-Time Niche Trend Radar (V2 Feature)
+### 🔥 Real-Time Niche Trend Radar
 - **Zero-Cost Hybrid Pulse:** Continuously scans real-time breakout discussions across **Hacker News Top Stories** (free public API) and breaking **X Niche Curators** (`@therundownai`, `@swyx`, `@levelsio`, `@techcrunch`).
 - **Niche Keyword Filtering:** Automatically discards irrelevant pop-culture/politics and keeps only stories matching your software, AI, or developer niche.
 - **Dual-Angle Generation:** For every emerging story, PostPilot drafts two distinct perspectives:
@@ -55,28 +55,41 @@
   - *Angle 2: Builder Breakdown* (Practical lessons and implementation takeaways for engineers).
 - **1-Tap Publishing:** Send `/trends` in Telegram or run `postpilot trends` in the CLI to scan and post in seconds.
 
-### 💬 Smart "Reply Guy" Assistant
-- **High-Signal Engagement:** Automatically drafts 3 distinct, non-sycophantic replies to any tweet text or URL (`/reply <tweet or X link>`):
-  - *Angle 1: Builder Experience* (Real-world practitioner nuance and edge cases).
-  - *Angle 2: Contrarian Edge* (Respectful counter-perspective or unstated trade-off).
-  - *Angle 3: Value-Add Punch* (Sharp, high-signal 1-liner).
-- **1-Tap Reply Links:** Direct `[🚀 Post Reply on X]` intent links pre-filled with the exact `in_reply_to` status ID.
+### 💬 Intelligent "Reply Guy" Assistant (V3 Upgrade)
+- **Live Tweet Context Fetching:** Automatically scrapes live tweet content and author handles from X status URLs (`/reply <tweet or X link>`, or simply paste a tweet link directly into chat) using headless readers—bypassing login walls so replies are 100% on-point.
+- **Authentic Human Peer Voice:** Strictly bans unsolicited lecturing (*"The key takeaway is..."*), sycophancy (*"100% agree!"*), and AI bot formulas. Replies sound like a sharp developer chatting with friends over coffee.
+- **3 Distinct Human Styles (<180 chars):**
+  - 💬 *Casual Peer / Relatable Banter:* Sharp, dry wit, peer developer reaction.
+  - 💡 *The Insider Nuance:* Thoughtful unstated trade-off or real-world perspective.
+  - ❓ *The Provocative Question:* High-signal, genuine question driving deep conversation.
+- **1-Tap Copy & Reply Intent:** Formatted into 1-tap copyable code blocks with direct `[🚀 Post Reply on X]` composer buttons pre-filled with the exact `in_reply_to` tweet ID.
 
-### 🧵 Viral Thread Architect
+### 🧵 Viral Thread Architect (V3 1-Tap Cards)
 - **Multi-Tweet Retention Playbook:** Type `/thread <topic>` to generate a structured 4-to-5 tweet thread:
-  - *Tweet 1 (The Hook):* High-tension premise ending in `🧵` or `👇`.
+  - *Tweet 1 (The Hook):* High-tension premise ending in `🧵`.
   - *Tweets 2–4 (The Breakdown):* Numbered value nuggets (`1/`, `2/`) with zero corporate fluff.
   - *Tweet 5 (The Wrap & CTA):* Synthesis + follow/bookmark callout.
+- **1-Tap Post & Copy Flow:** Delivered as individual message cards with copyable code blocks. Tap `[🚀 Launch Tweet 1 on X]` to open the X composer, then tap any subsequent card to copy and paste into the thread with `+` in seconds.
 
-### 🎙️ Voice Note / Audio Brain Dump to Tweet
+### 🎙️ Voice Note / Audio Brain Dump Polisher (V3 Dual-Engine)
 - **Zero-Friction Audio Capture:** Send or forward any voice memo or audio clip directly to PostPilot on Telegram.
-- **Instant Whisper Transcription:** Powered by Groq's high-speed `whisper-large-v3` API.
-- **Auto-Polishing:** Instantly distills your raw, spoken thoughts into 2 high-impact X drafts with 1-tap post buttons.
+- **Dual-Engine High-Precision Transcription:** Primary high-speed `whisper-large-v3` via Groq with a specialized technical vocabulary prompt, paired with an automatic Google Gemini multimodal fallback.
+- **3-Take Tweet Polisher:** Instantly transforms your raw stream of consciousness into 3 distinct, high-impact tweet takes:
+  - 🎯 *Direct Polish:* Clean, clear distillation keeping your authentic voice.
+  - 💡 *High-Impact Hook:* Bold, scroll-stopping opening leading into your core takeaway.
+  - ⚡ *Minimalist Punch:* Ultra-lean 1-2 sentence distillation under 140 characters.
+- **1-Tap Publishing:** Every take includes an instant copy box and a `[🚀 Post to X Now]` button.
 
-### ⏰ Spaced Content Drip Delivery (8:00 AM – 11:59 PM)
+### ⏰ Spaced Content Drip Delivery (3 drops/hr)
 - Automatically delivers **1 fresh post card every 20 minutes (3 drops/hr at :00, :20, :40)** directly to your Telegram chat during active hours (08:00 – 23:59).
 - Each card comes with a **`[🚀 Post to X Now]`** button that opens the pre-filled X composer directly in your phone's native X app in 1 tap, plus a **`[✅ Mark as Posted]`** button!
 - On-demand requests anytime: `/ideas [count]` or `/inspire @creator [count]`.
+
+### 📱 Private Telegram Remote Control & Pinned Dashboard
+- Single-user authenticated bot locked to your personal `TELEGRAM_OWNER_ID`.
+- **Persistent Bottom Dashboard:** 1-tap buttons for `🔥 Live Niche Trends`, `⚡ Quick Ideas (2)`, `🧵 Viral Thread`, `💬 Smart Reply`, `👥 Tracked Creators`, `📝 Review Drafts`, `📊 System Status`, and `📖 Guide & Help`.
+- Auto-detects pasted X status links and instantly triggers the Smart Reply Guy assistant.
+- Generate, inspect, approve, reject, and schedule posts directly from your phone while on the go.
 
 ### 🎭 CreatorDNA Content Profiling
 - Generates posts that sound like **you**, not a boilerplate corporate bot.
