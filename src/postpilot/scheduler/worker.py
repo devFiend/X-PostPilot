@@ -41,16 +41,16 @@ def execute_scheduled_post(draft_id: int):
 
 
 def configure_hourly_delivery_job():
-    """Register the content delivery drip job in APScheduler (every 15 mins between 8:00 - 23:59)."""
+    """Register the content delivery drip job in APScheduler (3 drops/hr: at :00, :20, :40 between 8:00 - 23:59)."""
     try:
         scheduler.add_job(
             run_hourly_delivery_sync,
-            trigger=CronTrigger(minute="0,15,30,45", hour="8-23", timezone=settings.TIMEZONE),
+            trigger=CronTrigger(minute="0,20,40", hour="8-23", timezone=settings.TIMEZONE),
             id="hourly_tweetdna_delivery",
-            name="TweetDNA 15-Minute Content Drip",
+            name="TweetDNA 20-Minute Content Drip (3/hr)",
             replace_existing=True,
         )
-        console.print(f"[bold green]✔ Spaced TweetDNA content delivery scheduled (08:00 - 23:59 {settings.TIMEZONE}, every 15 min).[/]")
+        console.print(f"[bold green]✔ Spaced TweetDNA content delivery scheduled (08:00 - 23:59 {settings.TIMEZONE}, 3 times/hour: :00, :20, :40).[/]")
     except Exception as e:
         console.print(f"[yellow]Warning: Could not schedule drip delivery: {e}[/]")
 

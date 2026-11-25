@@ -23,6 +23,10 @@ def init_db():
     Base.metadata.create_all(bind=engine)
 
 
+# Ensure tables are created on import
+init_db()
+
+
 def get_db() -> Session:
     """Yield a database session context."""
     db = SessionLocal()

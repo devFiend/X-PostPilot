@@ -40,7 +40,7 @@ class Settings(BaseSettings):
 
     # General
     TIMEZONE: str = "Africa/Lagos"
-    DRIP_INTERVAL_MINUTES: int = 15
+    DRIP_INTERVAL_MINUTES: int = 20
     MAX_POSTS_PER_DAY: int = 3
     POSTPILOT_DB_PATH: str = "postpilot.db"
     LOG_LEVEL: str = "INFO"
