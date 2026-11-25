@@ -38,26 +38,106 @@ def test_smart_reply_composer_url():
 async def test_smart_reply_generation():
     svc = SmartReplyService()
     mock_raw = (
-        "REPLY_1: 🛠️ We tested this in production and the database latency was cut by 60%.\n"
-        "REPLY_2: 🔥 The unstated trade-off here is operational complexity for small teams.\n"
-        "REPLY_3: ⚡ Clean abstractions always beat premature microservices."
+        "REPLY_1: Honestly, the hardest part of this is dealing with the edge cases nobody talks about.\n"
+        "REPLY_2: The hidden trade-off is maintenance cost. Looks great on paper until you have to debug it at 2 AM.\n"
+        "REPLY_3: Curious how you're handling this when scale doubles?"
     )
 
     with patch.object(svc.router, "generate_with_fallback", new_callable=AsyncMock) as mock_gen:
         mock_gen.return_value = ([mock_raw], "gemini")
-        replies = await svc.generate_replies(
+        result = await svc.generate_replies(
             source_tweet="What is your best database optimization tip?",
             tweet_id="11223344",
         )
 
+        assert isinstance(result, dict)
+        replies = result["options"]
         assert len(replies) == 3
-        assert "Builder Experience" in replies[0]["angle"]
-        assert "database latency" in replies[0]["content"]
+        assert "Casual Peer" in replies[0]["angle"]
+        assert "edge cases" in replies[0]["content"]
         assert "in_reply_to=11223344" in replies[0]["url"]
         assert replies[0]["character_count"] <= 280
 
-        assert "Contrarian Edge" in replies[1]["angle"]
-        assert "Value-Add Punch" in replies[2]["angle"]
+        assert "Insider Nuance" in replies[1]["angle"]
+        assert "Provocative Question" in replies[2]["angle"]
+
+
+@pytest.mark.asyncio
+async def test_smart_reply_fetch_tweet_by_url():
+    svc = SmartReplyService()
+    mock_resp = MagicMock(spec=httpx.Response)
+    mock_resp.status_code = 200
+    mock_resp.text = (
+        "Title: @levelsio on X\n\n"
+        "# @levelsio on X: \"Shipping fast is not about cutting corners, it is about eliminating meetings.\"\n\n"
+        "Conversation details..."
+    )
+
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock) as mock_get:
+        mock_get.return_value = mock_resp
+        data = await svc.fetch_tweet_by_url("https://x.com/levelsio/status/1899123456789")
+
+        assert data is not None
+        assert data["author"] == "levelsio"
+        assert data["tweet_id"] == "1899123456789"
+        assert "Shipping fast" in data["text"]
+
+
+@pytest.mark.asyncio
+async def test_reply_command_delivers_cards(monkeypatch):
+    from postpilot.telegram.handlers import reply_command
+    monkeypatch.setattr(settings, "TELEGRAM_OWNER_ID", 123456789)
+
+    update = MagicMock()
+    update.effective_user.id = 123456789
+    update.effective_message = MagicMock()
+    update.effective_message.reply_text = AsyncMock()
+    update.message = update.effective_message
+
+    context = MagicMock()
+    context.args = ["https://x.com/levelsio/status/1899123456789"]
+
+    mock_result = {
+        "author": "levelsio",
+        "tweet_id": "1899123456789",
+        "original_text": "Shipping fast is not about cutting corners, it is about eliminating meetings.",
+        "options": [
+            {
+                "angle": "💬 Casual Peer / Relatable Banter",
+                "content": "Every 30-minute sync costs 3 hours of deep work.",
+                "character_count": 48,
+                "url": "https://twitter.com/intent/tweet?text=Every...&in_reply_to=1899123456789",
+            },
+            {
+                "angle": "💡 The Insider Nuance",
+                "content": "Async updates work only when engineers write clearly.",
+                "character_count": 52,
+                "url": "https://twitter.com/intent/tweet?text=Async...&in_reply_to=1899123456789",
+            },
+            {
+                "angle": "❓ The Provocative Question",
+                "content": "What is the single biggest meeting time sink in your org right now?",
+                "character_count": 67,
+                "url": "https://twitter.com/intent/tweet?text=What...&in_reply_to=1899123456789",
+            },
+        ],
+    }
+
+    with patch("postpilot.telegram.handlers.SmartReplyService.generate_replies", new_callable=AsyncMock) as mock_gen:
+        mock_gen.return_value = mock_result
+        await reply_command(update, context)
+
+        # 1 status msg + 1 intro + 3 reply cards = 5 reply_text calls
+        assert update.effective_message.reply_text.call_count == 5
+        calls = update.effective_message.reply_text.call_args_list
+
+        intro_call = calls[1][0][0]
+        assert "Replying to @levelsio" in intro_call
+        assert "Shipping fast" in intro_call
+
+        card_call_1 = calls[2][0][0]
+        assert "```text\nEvery 30-minute sync costs 3 hours of deep work.\n```" in card_call_1
+        assert "Casual Peer" in card_call_1
 
 
 @pytest.mark.asyncio

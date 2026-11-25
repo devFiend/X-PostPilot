@@ -706,23 +706,51 @@ async def reply_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     reply_svc = SmartReplyService()
     try:
-        options = await reply_svc.generate_replies(source_tweet=raw_input)
+        result = await reply_svc.generate_replies(source_tweet=raw_input)
         try:
             await status_msg.delete()
         except Exception:
             pass
 
-        intro = "💬 *3 High-Signal Replies Ready to Post:*\n━━━━━━━━━━━━━━━━━━━━━━"
+        # Handle either dict (new) or list (legacy fallback)
+        if isinstance(result, dict):
+            options = result.get("options", [])
+            author = result.get("author")
+            original_text = result.get("original_text", "")
+        else:
+            options = result
+            author = None
+            original_text = ""
+
+        # Intro header
+        if author:
+            intro = (
+                f"💬 *Replying to @{safe_md(author)}:*\n"
+                f"_{safe_md(original_text[:200])}{'...' if len(original_text) > 200 else ''}_\n"
+                "━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Select a reply style below (1-tap to copy & open composer):*"
+            )
+        elif original_text and not ("x.com/" in original_text or "twitter.com/" in original_text):
+            intro = (
+                f"💬 *Replying to Topic / Tweet:*\n"
+                f"_{safe_md(original_text[:200])}{'...' if len(original_text) > 200 else ''}_\n"
+                "━━━━━━━━━━━━━━━━━━━━━━\n"
+                "👉 *Select a reply style below (1-tap to copy & open composer):*"
+            )
+        else:
+            intro = "💬 *3 High-Signal Replies Ready to Post:*\n━━━━━━━━━━━━━━━━━━━━━━"
+
         await target.reply_text(intro, parse_mode="Markdown")
 
         for opt in options:
             card_text = (
-                f"*{opt['angle']}* ({opt['character_count']} chars)\n\n"
-                f"{opt['content']}"
+                f"*{opt['angle']}* • `({opt['character_count']}/280 chars)`\n\n"
+                f"```text\n{opt['content']}\n```"
             )
             await target.reply_text(
                 card_text,
                 reply_markup=get_reply_card_keyboard(opt["url"]),
+                parse_mode="Markdown",
             )
     except Exception as e:
         await target.reply_text(f"⚠️ *Could not generate replies:* {safe_md(str(e))}", parse_mode="Markdown")
