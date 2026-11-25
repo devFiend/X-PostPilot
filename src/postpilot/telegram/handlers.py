@@ -28,7 +28,7 @@ from postpilot.services.dna import DNAService
 from postpilot.services.trends import TrendPulseService
 from postpilot.services.replies import SmartReplyService
 from postpilot.services.threads import ThreadService
-from postpilot.services.audio import AudioTranscriptionService
+from postpilot.services.audio import AudioTranscriptionService, VoiceTweetService
 from postpilot.utils.config import settings
 
 
@@ -810,8 +810,11 @@ async def thread_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 @owner_only
 async def voice_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
-    Transcribes voice notes or audio messages with Groq Whisper,
-    then transforms the raw brain dump into ready-to-post X drafts.
+    Transcribes voice notes or audio memos with Groq Whisper (or Gemini fallback),
+    then turns the spoken thought into 3 authentic, polished tweet options:
+    1. 🎯 Direct Polish: User's words & voice tightened for X.
+    2. 🔥 High-Impact Hook: Rephrased with viral energy & emojis.
+    3. ⚡ Minimalist Punch: Crisp one-liner (< 120 chars).
     """
     if not update.message:
         return
@@ -821,7 +824,7 @@ async def voice_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return
 
     status_msg = await update.message.reply_text(
-        "🎙️ *Listening to your voice note...*\nTranscribing with Groq Whisper...",
+        "🎙️ *Listening to your voice note...*\nTranscribing with high-precision audio engine...",
         parse_mode="Markdown",
     )
 
@@ -831,7 +834,7 @@ async def voice_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
         file_bytearray = await file_obj.download_as_bytearray()
         audio_bytes = bytes(file_bytearray)
 
-        # Transcribe with Whisper
+        # Transcribe with Whisper (or Gemini fallback)
         audio_svc = AudioTranscriptionService()
         transcript = await audio_svc.transcribe_audio_bytes(audio_bytes, filename="voice.ogg")
 
@@ -840,28 +843,35 @@ async def voice_message_handler(update: Update, context: ContextTypes.DEFAULT_TY
             return
 
         await status_msg.edit_text(
-            f"🎙️ *Transcribed Thought:*\n_\"{safe_md(transcript)}\"_\n\n✨ Polishing into high-impact X posts...",
+            f"🎙️ *What you said:*\n_\"{safe_md(transcript)}\"_\n\n✨ Polishing into 3 authentic tweet options...",
             parse_mode="Markdown",
         )
 
-        # Generate drafts from transcript
+        # Generate 3 intelligent takes from voice
+        voice_tweet_svc = VoiceTweetService()
+        options = await voice_tweet_svc.transform_voice_to_tweets(transcript)
+
         db = get_db()
         try:
-            content_svc = ContentService(db)
-            drafts = await content_svc.generate_drafts(
-                topic=transcript,
-                category="voice_braindump",
-                count=2,
-            )
+            draft_repo = DraftRepository(db)
+            for opt in options:
+                # Save as draft in DB
+                draft = draft_repo.create(
+                    content=opt["content"],
+                    topic=transcript[:60],
+                    category="voice_memo",
+                    provider=settings.DEFAULT_AI_PROVIDER,
+                    status=PostStatus.DRAFT.value,
+                )
 
-            for d in drafts:
                 card = (
-                    f"🎙️ *Voice-to-Post Draft #{d.id}* ({d.character_count} chars)\n\n"
-                    f"{d.content}"
+                    f"*{opt['angle']}* • `({opt['character_count']}/280 chars)`\n\n"
+                    f"```text\n{opt['content']}\n```"
                 )
                 await update.message.reply_text(
                     card,
-                    reply_markup=get_draft_keyboard(d.id, d.content),
+                    parse_mode="Markdown",
+                    reply_markup=get_draft_keyboard(draft.id, draft.content),
                 )
         finally:
             db.close()
