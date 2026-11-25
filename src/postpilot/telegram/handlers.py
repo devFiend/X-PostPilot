@@ -70,7 +70,7 @@ def format_system_health(db) -> tuple[str, InlineKeyboardMarkup]:
         "🟢 *Core Status:* `OPERATIONAL`\n"
         f"• *AI Engine:* `{provider_name}` — {ai_status}\n"
         f"• *Database:* `SQLite (Healthy)` — `postpilot.db`\n"
-        f"• *Drip Schedule:* `Every 15 min` (08:00 – 23:59 {settings.TIMEZONE})\n"
+        f"• *Drip Schedule:* `Every 20 min (3/hr)` (08:00 – 23:59 {settings.TIMEZONE})\n"
         f"• *Autopilot Engine:* `{auto_state}`\n"
         f"• *Publishing:* `$0 Direct X Composer Intent` (Ban-Proof)\n\n"
         "📈 *Live Content Metrics:*\n"
@@ -94,7 +94,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msg = (
         "🚀 *Welcome to PostPilot + TweetDNA Control Room*\n\n"
         "Your private AI social media ghostwriter & publishing copilot for X.\n\n"
-        "⏰ *Content Delivery Drip:* Fresh post cards delivered every 15 minutes during waking hours (*08:00 – 23:59*).\n\n"
+        "⏰ *Content Delivery Drip:* Fresh post cards delivered every 20 minutes (3 drops/hr) during waking hours (*08:00 – 23:59*).\n\n"
         "━━━━━━━━━━━━━━━━━━━━━━\n"
         "*⚡ Quick Tap Commands (Tap to Run):*\n"
         "• `/trends` — Scan live niche trends & get instant hot-takes\n"
@@ -138,8 +138,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👉 `/track @swyx`\n"
         "👉 `/track @_florian`\n\n"
         "PostPilot anonymously analyzes their public posts and builds a Content Playbook without touching your account credentials.\n\n"
-        "*2. Spaced Drip Delivery (08:00 – 23:59)*\n"
-        "Every 15 minutes, PostPilot automatically drafts 1 fresh post blending your creators' DNA with your niche.\n"
+        "*2. Spaced Drip Delivery (3 drops/hr)*\n"
+        "Every 20 minutes (at :00, :20, :40), PostPilot automatically drafts 1 fresh post blending your creators' DNA with your niche.\n"
         "Each card includes a **[🚀 Post to X Now]** button that directly launches the native X composer on your phone in 1 tap, plus **[✅ Mark as Posted]**!\n\n"
         "*3. On-Demand Posts Anytime*\n"
         "• `/ideas` (or `/ideas 3`)\n"
@@ -672,7 +672,7 @@ async def resume_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         autopilot.resume()
         await target.reply_text(
             "▶ *Autopilot & Content Drip RESUMED.*\n\n"
-            "Content cards will deliver every 15 minutes between 08:00 and 23:59.",
+            "Content cards will deliver every 20 minutes (3 drops/hr) between 08:00 and 23:59.",
             parse_mode="Markdown"
         )
     finally:

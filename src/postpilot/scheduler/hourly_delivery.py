@@ -1,7 +1,7 @@
 """
 Content Delivery Drip Job.
 Runs spaced out during waking hours (08:00 - 23:59 in user's configured timezone).
-Delivers 1 fresh post card at a time (e.g., every 15 minutes) using TweetDNA multi-creator intelligence.
+Delivers 1 fresh post card at a time (3 times per hour: :00, :20, :40) using TweetDNA multi-creator intelligence.
 Provides 1-tap direct 'Post to X Now' button launching the official native X composer.
 """
 
@@ -44,7 +44,7 @@ def is_active_hour(tz_name: str = "Africa/Lagos") -> bool:
 async def deliver_drip_post(count: int = 1):
     """
     Generate 1 (or requested count) fresh post from creator pool and dispatch individually to Telegram.
-    Runs every 15 minutes so the user receives a steady, spaced drip of content.
+    Runs 3 times an hour (every 20 minutes) so the user receives a steady, spaced drip of content.
     """
     if not is_active_hour(settings.TIMEZONE):
         console.print(f"[dim]Outside active hours (08:00 - 23:59 {settings.TIMEZONE}). Skipping drip drop.[/]")

@@ -13,7 +13,7 @@ from postpilot.dna.analyzer import TweetDNAAnalyzer
 from postpilot.dna.generator import TweetDNAGenerator
 
 
-# Curated high-signal baseline tweet templates used when no creators are tracked yet
+# Curated high-signal baseline tweet templates used as secondary seeds
 CURATED_SEED_TWEETS = [
     "Most people spend 6 months building something nobody wants. Build the ugly MVP in a weekend and test if strangers will actually pay you.",
     "The best tech stack is the one you already know. Stop redesigning your architecture before you have 10 paying users.",
@@ -30,6 +30,29 @@ CURATED_SEED_TWEETS = [
     "Talk to your users every single week. 15 minutes on a call will save you 3 weeks of building the wrong feature.",
     "Simple software that works reliably will always beat complex software with 100 broken bells and whistles.",
     "Consistency beats talent every single day. Ship one small improvement every day for a year and see where you end up.",
+]
+
+DYNAMIC_DEV_TOPICS = [
+    "Why SQLite in WAL mode handles 95% of early SaaS database loads before you need Postgres",
+    "PostgreSQL query optimization: why missing compound indexes kill p99 latency",
+    "Cache-aside vs write-through caching in high-traffic APIs with Redis",
+    "Why premature microservices kill early-stage velocity faster than messy monoliths",
+    "Handling webhook idempotency with Redis distributed locks and unique event keys",
+    "Database connection pool exhaustion: PgBouncer vs native connection management",
+    "Why duplicating code is far cheaper than building the wrong abstraction",
+    "Docker multi-stage builds: cutting image sizes from 1.2GB to 45MB",
+    "Zero-downtime database schema migrations in production with Alembic",
+    "Async Python workers: Celery vs Arq vs lightweight background tasks",
+    "Why boring technology stacks ship products while hype stacks burn weekends",
+    "The hidden cost of third-party SDKs: security vulnerabilities and dependency bloat",
+    "API rate limiting: Token bucket vs Leaky bucket algorithms in practice",
+    "Observability in production: structured JSON logging vs bloated tracing setups",
+    "Why junior developers add code and senior developers delete dependencies",
+    "State management in frontend: why prop drilling is often better than complex global stores",
+    "How to debug race conditions that only happen under production concurrency",
+    "Building resilient retry logic with exponential backoff and jitter",
+    "Why developers spend 80% of their time reading code instead of writing new features",
+    "Real-world incident response: what to do in the first 5 minutes of a production outage",
 ]
 
 
@@ -175,23 +198,33 @@ class DNAService:
                     "topic": topic or "TweetDNA Remixed",
                 })
         else:
-            # Fallback if no creators tracked yet: adapt curated seed tweets
-            shuffled_seeds = list(CURATED_SEED_TWEETS)
-            random.shuffle(shuffled_seeds)
+            # Fallback if no creators tracked yet: generate from dynamic technical topics and rotating archetypes
+            from postpilot.services.content import ContentService
+            content_svc = ContentService(self.db)
 
             for i in range(count):
-                seed_text = shuffled_seeds[i % len(shuffled_seeds)]
-                rephrased = await self.generator.generate_rephrased_tweet(
-                    source_tweet=seed_text,
-                    creator_username="naval",
-                    dna=None,
-                    niche=niche,
+                chosen_topic = topic or random.choice(DYNAMIC_DEV_TOPICS)
+                drafts = await content_svc.generate_drafts(
+                    topic=chosen_topic,
+                    category="engineering_insights",
+                    count=1,
                 )
-                post_content = rephrased if (rephrased and not self.draft_repo.is_duplicate(rephrased)) else seed_text
+                if drafts:
+                    post_content = drafts[0].content
+                else:
+                    seed_text = random.choice(CURATED_SEED_TWEETS)
+                    rephrased = await self.generator.generate_rephrased_tweet(
+                        source_tweet=seed_text,
+                        creator_username="builder",
+                        dna=None,
+                        niche=niche,
+                    )
+                    post_content = rephrased or seed_text
+
                 results.append({
                     "content": post_content,
                     "creator": "general",
-                    "topic": topic or "Founder Insight",
+                    "topic": chosen_topic,
                 })
 
         return results

@@ -74,7 +74,7 @@
 - **Auto-Polishing:** Instantly distills your raw, spoken thoughts into 2 high-impact X drafts with 1-tap post buttons.
 
 ### ⏰ Spaced Content Drip Delivery (8:00 AM – 11:59 PM)
-- Automatically delivers **1 fresh post card every 15 minutes** directly to your Telegram chat during active hours (08:00 – 23:59).
+- Automatically delivers **1 fresh post card every 20 minutes (3 drops/hr at :00, :20, :40)** directly to your Telegram chat during active hours (08:00 – 23:59).
 - Each card comes with a **`[🚀 Post to X Now]`** button that opens the pre-filled X composer directly in your phone's native X app in 1 tap, plus a **`[✅ Mark as Posted]`** button!
 - On-demand requests anytime: `/ideas [count]` or `/inspire @creator [count]`.
 
