@@ -144,3 +144,55 @@ async def test_thread_command_delivers_individual_cards(monkeypatch):
 
         card_call_2 = calls[3][0][0]
         assert "```text\nValue point 1\n```" in card_call_2
+
+
+@pytest.mark.asyncio
+async def test_voice_tweet_service_generates_3_takes():
+    from postpilot.services.audio import VoiceTweetService
+
+    svc = VoiceTweetService()
+    raw_takes = (
+        "TAKE_1: Why do developers spend weeks arguing about state management when prop drilling works for 90% of apps?\n"
+        "TAKE_2: 💡 State management is a trap. 90% of web apps only ever need prop drilling. Keep it dead simple.\n"
+        "TAKE_3: ⚡ Stop over-engineering state management. Prop drilling is fine."
+    )
+
+    with patch.object(svc.router, "generate_with_fallback", new_callable=AsyncMock) as mock_gen:
+        mock_gen.return_value = ([raw_takes], "gemini")
+        takes = await svc.transform_voice_to_tweets(
+            "Why do developers spend weeks arguing about state management when prop drilling works for 90% of apps?"
+        )
+
+        assert len(takes) == 3
+        assert "Direct Polish" in takes[0]["angle"]
+        assert "state management" in takes[0]["content"]
+        assert takes[0]["character_count"] <= 280
+
+        assert "High-Impact Hook" in takes[1]["angle"]
+        assert "Minimalist Punch" in takes[2]["angle"]
+
+
+@pytest.mark.asyncio
+async def test_audio_transcription_gemini_fallback():
+    # Verify fallback to Gemini when Groq fails
+    svc = AudioTranscriptionService(groq_api_key="bad_groq_key", gemini_api_key="good_gemini_key")
+
+    mock_resp = MagicMock(spec=httpx.Response)
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = {
+        "candidates": [
+            {
+                "content": {
+                    "parts": [{"text": "Gemini transcribed this audio perfectly."}]
+                }
+            }
+        ]
+    }
+    mock_resp.raise_for_status = MagicMock()
+
+    with patch.object(svc, "_transcribe_with_whisper", side_effect=Exception("Groq error")), \
+         patch("httpx.AsyncClient.post", new_callable=AsyncMock) as mock_post:
+        mock_post.return_value = mock_resp
+        transcript = await svc.transcribe_audio_bytes(b"dummy_bytes")
+        assert transcript == "Gemini transcribed this audio perfectly."
+
